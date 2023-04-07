@@ -14,16 +14,9 @@ pub struct MainLayout {
 impl MainLayout {
     pub fn from<B: Backend>(f: &mut Frame<B>) -> MainLayout {
         
-        let menu: Vec<Rect> = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Percentage(100),
-                ].as_ref()
-            ).split(f.size());
-        
+        let menu: Vec<Rect> = get_menu_layout(f);
         let settings: Vec<Rect> = get_settings_layout(f);
-           
+        
         MainLayout { menu , settings }
     }
 }

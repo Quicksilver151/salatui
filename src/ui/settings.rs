@@ -6,7 +6,7 @@ pub fn get_settings_layout<B: Backend>(f: &mut Frame<B>) -> Vec<Rect> {
             Constraint::Percentage(25),
             Constraint::Percentage(25),
             Constraint::Percentage(25),
-            Constraint::Percentage(25),
+Constraint::Percentage(25),
         ].as_ref()
     ).split(f.size())
 }

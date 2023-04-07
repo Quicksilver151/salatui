@@ -88,13 +88,13 @@ fn ui<B: Backend>(f: &mut Frame<B>){
     let block_4 = new_block("4");
         
     
-    // f.render_widget(menu_block, layouts.menu[0]);
     
     f.render_widget(block_1, layouts.settings[0]);
     f.render_widget(block_2, layouts.settings[1]);
     f.render_widget(block_3, layouts.settings[2]);
     f.render_widget(block_4, layouts.settings[3]);
     
+    f.render_widget(menu_block, layouts.menu[0]);
 }
 
 // fn ui<B: Backend>(f: &mut Frame<B>) {
