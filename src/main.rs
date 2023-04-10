@@ -18,10 +18,12 @@ pub use tui::{
 
 
 // mod files
+mod structs;
 mod ui;
 mod salat;
 mod parsers;
 
+pub use structs::*;
 pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
@@ -41,7 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
     
-    let result = run_app(&mut terminal);
+    let mut input_map: InputMap = InputMap::default();
+    let result = run_app(&mut terminal, &mut input_map);
     
     disable_raw_mode()?;
     execute!(
@@ -58,35 +61,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> Result<(), std::io::Error> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> Result<(), std::io::Error> {
+    
+    terminal.draw(|f| ui(f, input_map))?;
     loop {
-        terminal.draw(|f| ui(f))?;
+        // input_map.reset();
         if let Key(key) = event::read()? {
             match key.code {
                 KeyCode::Esc       =>  return Ok(()),
-                KeyCode::Char('q') =>  return Ok(()),
+                KeyCode::Char('q') => input_map.quit = true,
+                KeyCode::Char('r') => input_map.rename = true,
+                KeyCode::Down      => input_map.shrink = ! input_map.shrink,
+                
                 _ => {}
             }
+            
         }
+        // dbg!(&input_map);
+        if input_map.quit{return Ok(())};
+        terminal.draw(|f| ui(f, input_map))?;
     }
 }
-fn new_block(title: &str) -> Block{
-    let block = Block::default()
-        .title(title)
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded);
-    block
-}
 
-fn ui<B: Backend>(f: &mut Frame<B>){
-    let layouts = MainLayout::from(f);
+
+fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
+    
+    fn new_block(title: &str) -> Block{
+        let block = Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded);
+        block
+    }
+    
+    let layouts = MainLayout::from(f,input_map.shrink);
     let menu_block = new_block("Menu");
     
     let block_1 = new_block("1");
     let block_2 = new_block("2");
     let block_3 = new_block("3");
     let block_4 = new_block("4");
-        
     
     
     f.render_widget(block_1, layouts.settings[0]);
