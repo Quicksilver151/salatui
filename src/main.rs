@@ -68,10 +68,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> 
         // input_map.reset();
         if let Key(key) = event::read()? {
             match key.code {
-                KeyCode::Esc       =>  return Ok(()),
+                // KeyCode::Esc       =>{input_map.back = true; return Ok(())}
                 KeyCode::Char('q') => input_map.quit = true,
                 KeyCode::Char('r') => input_map.rename = true,
                 KeyCode::Down      => input_map.shrink = ! input_map.shrink,
+                
+                KeyCode::Right | KeyCode::Enter => input_map.enter = true,
+                KeyCode::Left  | KeyCode::Esc   => input_map.back  = true,
                 
                 _ => {}
             }
