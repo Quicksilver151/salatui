@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         DisableMouseCapture,
     )?;
     if let Err(e) = result {
-        println!("{}", e.to_string());
+        println!("{}", e);
     }
     
     
