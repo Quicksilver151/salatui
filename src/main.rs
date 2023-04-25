@@ -65,7 +65,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> 
     
     terminal.draw(|f| ui(f, input_map))?;
     loop {
-        // input_map.reset();
+        input_map.reset();
         if let Key(key) = event::read()? {
             match key.code {
                 // KeyCode::Esc       =>{input_map.back = true; return Ok(())}
@@ -102,7 +102,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
     }
     
     let layouts = MainLayout::from(f,input_map.shrink);
-    let menu_block = new_block("Menu");
+    let menu_block = new_block(input_map.get_current());
     
     let block_1 = new_block("1");
     let block_2 = new_block("2");

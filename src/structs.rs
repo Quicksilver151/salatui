@@ -19,20 +19,38 @@ impl InputMap {
     pub fn new() -> InputMap {
         InputMap {
             rename: false,
-            quit: false,
+            quit:   false,
             shrink: false,
-            next: false,
-            prev: false,
-            enter: false,
-            back: false,
-            up: false,
-            down: false,
+            next:   false,
+            prev:   false,
+            enter:  false,
+            back:   false,
+            up:     false,
+            down:   false,
         }
     }
     pub fn reset(&mut self) {
         self.rename = false;
         self.quit   = false;
         self.shrink = false;
+        self.next   = false;
+        self.prev   = false;
+        self.enter  = false;
+        self.back   = false;
+        self.up     = false;
+        self.down   = false;
+    }
+    pub fn get_current(&mut self) -> &str{
+        if self.rename{return "rename"}
+        if self.quit  {return "quit  "}
+        if self.shrink{return "shrink"}
+        if self.next  {return "next  "}
+        if self.prev  {return "prev  "}
+        if self.enter {return "enter "}
+        if self.back  {return "back  "}
+        if self.up    {return "up    "}
+        if self.down  {return "down  "}
+        ""
     }
 }
 
