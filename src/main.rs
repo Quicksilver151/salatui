@@ -68,16 +68,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> 
         input_map.reset();
         if let Key(key) = event::read()? {
             match key.code {
-                // KeyCode::Esc       =>{input_map.back = true; return Ok(())}
                 KeyCode::Char('q') => input_map.quit   = true,
                 KeyCode::Char('r') => input_map.rename = true,
-                // KeyCode::Down      => input_map.shrink = ! input_map.shrink,
                 
                 KeyCode::Right | KeyCode::Enter => input_map.enter = true,
                 KeyCode::Left  | KeyCode::Esc   => input_map.back  = true,
                 
-                KeyCode::Up   => input_map.up   = true,
-                KeyCode::Down => input_map.down = true,
+                KeyCode::Up   | KeyCode::BackTab => input_map.up   = true,
+                KeyCode::Down | KeyCode::Tab     => input_map.down = true,
                 
                 
                 _ => {}
@@ -110,10 +108,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
     let block_4 = new_block("4");
     
     
-    // f.render_widget(block_1, layouts.settings[0]);
-    // f.render_widget(block_2, layouts.settings[1]);
-    // f.render_widget(block_3, layouts.settings[2]);
-    // f.render_widget(block_4, layouts.settings[3]);
+    f.render_widget(block_1, layouts.settings[0]);
+    f.render_widget(block_2, layouts.settings[1]);
+    f.render_widget(block_3, layouts.settings[2]);
+    f.render_widget(block_4, layouts.settings[3]);
     
     f.render_widget(menu_block, layouts.menu[0]);
 }
