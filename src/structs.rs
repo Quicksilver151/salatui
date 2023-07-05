@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct InputMap {
     pub rename: bool,
     pub quit: bool,
@@ -17,28 +17,10 @@ pub struct InputMap {
 }
 impl InputMap {
     pub fn new() -> InputMap {
-        InputMap {
-            rename: false,
-            quit:   false,
-            shrink: false,
-            next:   false,
-            prev:   false,
-            enter:  false,
-            back:   false,
-            up:     false,
-            down:   false,
-        }
+        InputMap::default()
     }
     pub fn reset(&mut self) {
-        self.rename = false;
-        self.quit   = false;
-        self.shrink = false;
-        self.next   = false;
-        self.prev   = false;
-        self.enter  = false;
-        self.back   = false;
-        self.up     = false;
-        self.down   = false;
+        *self = InputMap::default();
     }
     pub fn get_current(&mut self) -> &str{
         if self.rename{return "rename"}
@@ -54,11 +36,6 @@ impl InputMap {
     }
 }
 
-impl Default for InputMap{
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 
 
