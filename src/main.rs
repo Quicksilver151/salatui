@@ -1,12 +1,8 @@
-
 // crates
-pub use crossterm::{
-    event::{self, KeyCode, EnableMouseCapture, DisableMouseCapture,
-        Event::Key
-    },
-    execute,
-    terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
+pub use crossterm::{event, execute, terminal};
+
+pub use event::{KeyCode, EnableMouseCapture, DisableMouseCapture, Event::Key};
+pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 
 pub use tui::{
     Terminal,
@@ -27,9 +23,6 @@ pub use structs::*;
 pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
-
-
-
 
 
 
