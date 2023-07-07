@@ -27,18 +27,23 @@ pub use parsers::*;
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    
+    // init:
     enable_raw_mode()?;
     execute!(
         std::io::stdout(),
         EnterAlternateScreen,
         EnableMouseCapture
     )?;
+    
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    
     let mut input_map: InputMap = InputMap::default();
+    
+    // main
     let result = run_app(&mut terminal, &mut input_map);
     
+    // end
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
@@ -49,11 +54,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{}", e);
     }
     
-    
     Ok(())
 }
 
-
+// APPLICATION
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> Result<(), std::io::Error> {
     
     terminal.draw(|f| ui(f, input_map))?;
@@ -81,7 +85,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> 
     }
 }
 
-
+// INTERFACE
 fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
     
     fn new_block(title: &str) -> Block{
