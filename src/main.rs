@@ -7,7 +7,10 @@ pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, Leav
 pub use tui::{
     Terminal,
     Frame,
-    widgets::{Block, Borders, BorderType, List, ListItem, ListState, Paragraph},
+    text::Spans,
+    style::{Color, Style},
+    symbols::*,
+    widgets::{Block, Borders, BorderType, List, ListItem, ListState, Paragraph, Tabs},
     layout:: {Layout, Direction, Constraint, Rect},
     backend::{CrosstermBackend, Backend},
 };
@@ -104,11 +107,20 @@ fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
     let block_3 = new_block("3");
     let block_4 = new_block("4");
     
+    let titles = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Spans::from).collect();
+    
+    let tabthings = Tabs::new(titles)
+    .block(Block::default().title("Tabs").borders(Borders::ALL))
+    .style(Style::default().fg(Color::White))
+    .highlight_style(Style::default().fg(Color::Yellow))
+    .divider(DOT);
     
     f.render_widget(block_1, layouts.settings[0]);
     f.render_widget(block_2, layouts.settings[1]);
     f.render_widget(block_3, layouts.settings[2]);
     f.render_widget(block_4, layouts.settings[3]);
+    
+    f.render_widget(tabthings, layouts.menu[0]);
     
     f.render_widget(menu_block, layouts.menu[0]);
 }
