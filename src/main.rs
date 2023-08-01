@@ -4,6 +4,7 @@ pub use crossterm::{event, execute, terminal};
 pub use event::{KeyCode, EnableMouseCapture, DisableMouseCapture, Event::Key};
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 
+pub use clap::Parser;
 pub use tui::{
     Terminal,
     Frame,
@@ -30,6 +31,8 @@ pub use parsers::*;
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    
+    let args = Args::parse();
     
     // init:
     enable_raw_mode()?;
