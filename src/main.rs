@@ -33,6 +33,11 @@ pub use parsers::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let args = Args::parse();
+    dbg!(args.output);
+    
+    // if let Some(x) = args.config {
+        // println!("{:?}", x.as_path());
+    // }
     
     // init:
     enable_raw_mode()?;

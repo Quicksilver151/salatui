@@ -4,9 +4,13 @@ use clap::Parser;
 #[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// Path to config file
+    /// Output data once and exit program 
+    #[arg(short, long, action)]
+    pub output: bool,
+    
+    /// Use the config file from this path
     #[arg(short, long)]
-    pub config: Option<String>,
+    pub config: Option<std::path::PathBuf>,
     
 }
 
