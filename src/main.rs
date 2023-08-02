@@ -29,17 +29,19 @@ pub use salat::*;
 pub use parsers::*;
 
 
+fn output_data() {
+    println!("[output data]");
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let args = Args::parse();
-    dbg!(args.output);
     
-    // if let Some(x) = args.config {
-        // println!("{:?}", x.as_path());
-    // }
+    if args.output {
+        output_data();
+        return Ok(());
+    }
     
-    // init:
     enable_raw_mode()?;
     execute!(
         std::io::stdout(),
