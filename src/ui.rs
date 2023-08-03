@@ -5,6 +5,7 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
+pub use tui::layout::{Layout, Direction, Constraint, Rect};
 
 pub struct MainLayout {
     pub menu : Vec<Rect>,

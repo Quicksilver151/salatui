@@ -12,7 +12,6 @@ pub use tui::{
     style::{Color, Style},
     symbols::*,
     widgets::{Block, Borders, BorderType, List, ListItem, ListState, Paragraph, Tabs},
-    layout:: {Layout, Direction, Constraint, Rect},
     backend::{CrosstermBackend, Backend},
 };
 

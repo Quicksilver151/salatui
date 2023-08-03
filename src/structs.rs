@@ -1,5 +1,3 @@
-use crate::*;
-
 #[derive(Debug, Default)]
 pub struct InputMap {
     pub rename: bool,
