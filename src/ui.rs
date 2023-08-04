@@ -7,12 +7,19 @@ pub use menu::*;
 pub use settings::*;
 pub use tui::layout::{Layout, Direction, Constraint, Rect};
 
+/// A widget to show as main screen
+///
+///
 pub struct MainLayout {
+    /// menu container
     pub menu : Vec<Rect>,
     pub settings: Vec<Rect>,
 }
 
+// changable setting ui + struct needed here Option{SettingType}; settingtype::choice(vec), string(or int)
+
 impl MainLayout {
+    /// the main layout
     pub fn from<B: Backend>(f: &mut Frame<B>, shrink: bool) -> MainLayout {
         
         let menu: Vec<Rect> = get_menu_layout(f);     
