@@ -1,5 +1,7 @@
 
-
+// ===================
+// general data store:
+// ===================
 
 // #[derive(Debug)]
 // pub struct TimeSet{
@@ -18,5 +20,38 @@
 //         }
 //     }
 // }
+
+
+
+
+// ===================
+// built in support:
+// ===================
+
+// SALAT_MV:
+
+pub struct MVRawData {
+    pub pt: String,
+    pub atoll: String,
+    pub island: String,
+}
+impl MVRawData {
+    pub fn from(pt: String, atoll: String, island: String) -> MVRawData {
+        MVRawData {pt, atoll, island}
+    }
+    pub fn parse_timeset(&self, index:u8) -> MVTimeSet{
+        todo!("{}",index)
+    }
+}
+
+
+pub struct MVTimeSet {
+    pub island: String,
+    pub atoll: String,
+    pub coordinates: (String, String),
+    pub data: Vec<Vec<u32>>,
+}
+
+
 
 
