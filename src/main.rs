@@ -27,7 +27,6 @@ pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
 
-
 fn output_data() {
     println!("[output data]");
 }
