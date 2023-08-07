@@ -1,4 +1,6 @@
 
+
+
 // General Data structs
 
 #[derive(Debug, Default, Eq)]
@@ -21,18 +23,40 @@ impl PartialEq for TimeSet {
 // built in support:
 // ===================
 
+// data parsed during build time
+// include!(concat!(env!("OUT_DIR"), "/parsed_data.rs")); // build script output
+// might try this if optimisation is required, for now gonna focus on finishing the main program
+// #[derive(Debug, PartialEq, Eq)]
+// pub struct MVData<'a> {
+//     pub pt:     [[u32    ; 8]; 15372],
+//     pub island: [[&'a str;10];   205],
+//     pub atoll:  [[&'a str; 4];    20],
+// }
+// impl<'a> MVData<'a> {
+//     pub fn from(pt: [[u32; 8]; 15372], island: [[&'a str;10]; 205], atoll:[[&'a str; 4];20]) -> Self{
+//         MVData {pt,  island, atoll}
+//     }
+//     pub fn parse_timeset(&self, island_index: usize) -> Option<TimeSet> {
+//         todo!()
+//     }
+// }
+
 #[derive(Debug, Default, PartialEq, Eq)]
-/// SALAT_MV Raw dataset processing
+/// Salatmv string dataset struct
 pub struct MVRawData {
-    pub pt: String,
+    /// atoll[x]  => 0:index, 1:eng_name, 2:dhi_name, 3:ar_name
     pub atoll: String,
+    /// island[x]  => 0:timeset_index, 1:island_index, 2:atoll_index, 3:eng_name, 4:dhi_name,
+    /// 5:ar_name, 6:unknown, 7:latitude, 8:longitude, 9:unknown
     pub island: String,
+    /// pt[x] => 0:timeset_index, 1:day, 2:fajr, 3:sun, 4:duhur, 5:asr, 6:magrib, 7:isha
+    pub pt: String,
 }
 impl MVRawData {
     pub fn from(pt: String, atoll: String, island: String) -> MVRawData {
         MVRawData {pt, atoll, island}
     }
-    pub fn parse_timeset(&self, island_index:usize) -> Option<TimeSet>{
+    pub fn parse_timeset(&self, island_index: usize) -> Option<TimeSet> {
         if self.pt.is_empty(){
             return None
         };
