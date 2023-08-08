@@ -15,6 +15,8 @@ pub use tui::{
     backend::{CrosstermBackend, Backend},
 };
 
+pub use serde::{Serialize, Deserialize};
+
 
 // mod files
 mod structs;
@@ -27,7 +29,17 @@ pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
 
+fn save_data(config: &Config) {
+    confy::store("salatui", "config.toml", config).unwrap();
+}
+
 fn output_data() {
+    let mut conf = Config::default();
+    conf.display.show_raw_output = true;
+    let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
+    conf.provider = Provider::Data(timeset.get_metadata());
+    save_data(&conf);
+    salat_times(&conf, &timeset);
     println!("[output data]");
 }
 

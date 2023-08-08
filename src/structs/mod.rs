@@ -8,3 +8,12 @@ pub use input::*;
 pub mod data;
 pub use data::*;
 
+pub mod ui;
+pub use ui::*;
+
+
+
+pub struct AppState {
+
+}
+

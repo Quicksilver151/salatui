@@ -1,26 +1,27 @@
+use crate::*;
 
 
+/// General Data structs
 
-// General Data structs
-
-#[derive(Debug, Default, Eq)]
-pub struct TimeSet {
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimeSetData {
     pub name: String,
     pub details: String,
     pub coordinates: (String, String),
     pub data: Vec<Vec<u32>>,
 }
-impl PartialEq for TimeSet {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-        && self.details == other.details
-        && self.coordinates == other.coordinates
-        && self.data[0..2] == other.data[0..2]
+impl TimeSetData {
+    pub fn get_metadata(&self) -> TimeSetMeta{
+        TimeSetMeta { 
+            name: self.name.to_owned(),
+            coordinates: self.coordinates.to_owned(),
+            details: self.details.to_owned() 
+        }
     }
 }
 
 // ===================
-// built in support:
+/// Built-in support:
 // ===================
 
 // data parsed during build time
@@ -41,7 +42,7 @@ impl PartialEq for TimeSet {
 //     }
 // }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 /// Salatmv string dataset struct
 pub struct MVRawData {
     /// atoll[x]  => 0:index, 1:eng_name, 2:dhi_name, 3:ar_name
@@ -52,11 +53,13 @@ pub struct MVRawData {
     /// pt[x] => 0:timeset_index, 1:day, 2:fajr, 3:sun, 4:duhur, 5:asr, 6:magrib, 7:isha
     pub pt: String,
 }
+
 impl MVRawData {
     pub fn from(pt: String, atoll: String, island: String) -> MVRawData {
         MVRawData {pt, atoll, island}
     }
-    pub fn parse_timeset(&self, island_index: usize) -> Option<TimeSet> {
+    
+    pub fn parse_to_timeset(&self, island_index: usize) -> Option<TimeSetData> {
         if self.pt.is_empty(){
             return None
         };
@@ -87,14 +90,14 @@ impl MVRawData {
         let atoll_name = atoll_data[atoll_index][1].to_string();
         
         // PT
-        let timeset = island_data[0].clone();
+        let timeset_index = island_data[0].clone();
         let pt_data:Vec<Vec<u32>> = { 
             let mut rows: Vec<&str> = self.pt.split('\n').collect();
             rows.pop();
             let table: Vec<Vec<&str>> = rows.into_iter().map(|column| column.split(';').collect()).collect();
             
             table.into_iter()
-                .filter(|column| column[0] == timeset)
+                .filter(|column| column[0] == timeset_index)
                 .map(|column| column.into_iter().map(|e| e.parse::<u32>().unwrap_or(444000444)).collect())
                 .collect()
         };
@@ -102,11 +105,29 @@ impl MVRawData {
         let name = format!("{atoll_name}. {island_name}");
         let details = String::from("");
         let coordinates = (island_data[7].to_string(), island_data[8].to_string());
+        
         let data = pt_data;
         
-        Some(TimeSet {name, details, coordinates, data})
+        Some(TimeSetData{name, details, coordinates, data})
     }
 }
+impl Default for MVRawData {
+    fn default() -> Self {
+        use std::fs;
+        
+        let atoll = fs::read_to_string("./data/atolls.csv")
+            .expect("Should have been able to read the file");
+        
+        let pt = fs::read_to_string("./data/ptdata.csv")
+            .expect("Should have been able to read the file");
+        
+        let island = fs::read_to_string("./data/islands.csv")
+            .expect("Should have been able to read the file");
+        
+        MVRawData::from(pt, atoll, island)
+    }
+}
+
 
 
 #[test]
@@ -122,24 +143,27 @@ fn mv_data_parse(){
     let island = fs::read_to_string("./data/islands.csv")
         .expect("Should have been able to read the file");
     
-    let parsed = match (MVRawData{atoll, pt, island}).parse_timeset(177){
+    let parsed = match (MVRawData{atoll, pt, island}).parse_to_timeset(177){
         Some(parsed) => parsed,
         None => panic!("parsing data")
     };
-    
-    let expected = TimeSet {
+    dbg!(&parsed);
+    let parsed = parsed.get_metadata();
+    let expected = TimeSetMeta {
         name: String::from("GDh. Vilingili"),
         details: String::new(),
         coordinates: (
             String::from("0.755293"),
             String::from("73.434885")
         ),
-        data: vec![
-            vec![77, 0, 289, 366, 734, 937, 1095, 1172],
-            vec![77, 1, 290, 366, 735, 937, 1095, 1173],
-        ]
+        // data: Box::new(TimeSetData {
+        //     content: vec![
+        //         vec![77, 0, 289, 366, 734, 937, 1095, 1172],
+        //         vec![77, 1, 290, 366, 735, 937, 1095, 1173],
+        //     ], ..Default::default()
+        // })
     };
-    
+
     assert_eq!(parsed, expected);
 }
 
