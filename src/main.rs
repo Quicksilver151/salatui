@@ -3,7 +3,7 @@ pub use crossterm::{event, execute, terminal};
 
 pub use event::{KeyCode, EnableMouseCapture, DisableMouseCapture, Event::Key};
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-
+// pub use arboard::*;
 pub use clap::Parser;
 pub use tui::{
     Terminal,
@@ -34,6 +34,12 @@ fn save_data(config: &Config) {
 }
 
 fn output_data() {
+    // clipboard testing
+    // let mut x = arboard::Clipboard::new().unwrap();
+    // let selection = LinuxClipboardKind::Primary;
+    // arboard::Clipboard::get(&mut x);
+    // println!("{:?}",x.get().clipboard(selection).text());
+    
     let mut conf = Config::default();
     conf.display.show_raw_output = true;
     let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
