@@ -43,7 +43,7 @@ fn output_data() {
     let mut conf = Config::default();
     conf.display.show_raw_output = true;
     let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
-    conf.provider = Provider::Data(timeset.get_metadata());
+    conf.provider = Provider::Data(timeset.name.to_owned());
     save_data(&conf);
     salat_times(&conf, &timeset);
     println!("[output data]");

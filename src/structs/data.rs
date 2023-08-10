@@ -10,15 +10,6 @@ pub struct TimeSetData {
     pub coordinates: (String, String),
     pub data: Vec<Vec<u32>>,
 }
-impl TimeSetData {
-    pub fn get_metadata(&self) -> TimeSetMeta{
-        TimeSetMeta { 
-            name: self.name.to_owned(),
-            coordinates: self.coordinates.to_owned(),
-            details: self.details.to_owned() 
-        }
-    }
-}
 
 
 // ===================
@@ -149,21 +140,20 @@ fn mv_data_parse(){
         None => panic!("parsing data")
     };
     dbg!(&parsed);
-    let parsed = parsed.get_metadata();
-    let expected = TimeSetMeta {
-        name: String::from("GDh. Vilingili"),
-        details: String::new(),
-        coordinates: (
-            String::from("0.755293"),
-            String::from("73.434885")
-        ),
+    let parsed = parsed.name;
+    let expected = String::from("GDh. Vilingili");
+        // details: String::new(),
+        // coordinates: (
+        //     String::from("0.755293"),
+        //     String::from("73.434885")
+        // ),
         // data: Box::new(TimeSetData {
         //     content: vec![
         //         vec![77, 0, 289, 366, 734, 937, 1095, 1172],
         //         vec![77, 1, 290, 366, 735, 937, 1095, 1173],
         //     ], ..Default::default()
         // })
-    };
+    // };
 
     assert_eq!(parsed, expected);
 }

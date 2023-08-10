@@ -9,36 +9,12 @@ pub struct CalculationMethod {
     
 }
 
-#[derive(Debug, Eq, Serialize, Deserialize)]
-pub struct TimeSetMeta {
-    pub name: String,
-    pub details: String,
-    pub coordinates: (String, String),
-}
-impl Default for TimeSetMeta {
-    fn default() -> Self {
-        let name = String::from("");
-        let details = String::from("");
-        let coordinates = (String::from(""), String::from(""));
-        
-        TimeSetMeta { name, details, coordinates}
-    }
-}
-impl PartialEq for TimeSetMeta {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-        && self.details == other.details
-        && self.coordinates == other.coordinates
-        // && self.data.content[0..2] == other.data.content[0..2]
-    }
-}
-
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Provider {
     #[default]
     Manual,
-    Data(TimeSetMeta),
+    Data(String),
     Calculation(CalculationMethod),
 }
 
