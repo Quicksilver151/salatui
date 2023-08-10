@@ -5,12 +5,12 @@ use crate::*;
 pub struct CalculationMethod {
     pub name: String,
     pub location: String,
-    pub coordinates: String  //TODO: change to actual coord struct
+    pub coordinates: (String, String)  //TODO: change to actual coord struct
     
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(untagged)]
 pub enum Provider {
     #[default]
     Manual,

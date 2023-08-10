@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimeSetData {
     pub name: String,
-    pub details: String,
+    pub details: Option<String>,
     pub coordinates: (String, String),
     pub data: Vec<Vec<u32>>,
 }
@@ -95,7 +95,7 @@ impl MVRawData {
         };
         
         let name = format!("{atoll_name}. {island_name}");
-        let details = String::from("");
+        let details = None;
         let coordinates = (island_data[7].to_string(), island_data[8].to_string());
         
         let data = pt_data;

@@ -30,7 +30,7 @@ pub use salat::*;
 pub use parsers::*;
 
 fn save_data(config: &Config) {
-    confy::store("salatui", "config.toml", config).unwrap();
+    confy::store("salatui", "config", config).unwrap();
 }
 
 fn output_data() {
@@ -44,9 +44,12 @@ fn output_data() {
     conf.display.show_raw_output = true;
     let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
     conf.provider = Provider::Data(timeset.name.to_owned());
+    
+    // conf.provider = Provider::Calculation(CalculationMethod::default());
     save_data(&conf);
-    salat_times(&conf, &timeset);
-    println!("[output data]");
+    let loaded: Config = confy::load("salatui", "config").unwrap();
+    // salat_times(&conf, &timeset);
+    println!("[output data]\n{:?}",loaded);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
