@@ -1,3 +1,4 @@
+
 use crate::*;
 
 
@@ -10,6 +11,44 @@ pub struct TimeSetData {
     pub coordinates: (String, String),
     pub data: Vec<Vec<u32>>,
 }
+impl TimeSetData {
+    
+    pub fn load(name: &str) -> Result<TimeSetData, confy::ConfyError> {
+        let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
+        let mut data_path = dirs.data_dir().to_path_buf();
+        data_path.push(name);
+        
+        if std::path::Path::exists(&data_path) {
+            let data = confy::load_path(data_path)?;
+            Ok(data)
+        }else{
+            let err_path = data_path.to_str().unwrap().to_string();
+            Err(confy::ConfyError::BadConfigDirectory(err_path))
+        }
+    }
+    
+    pub fn save(&self, name: &str) -> Result<(), confy::ConfyError>{
+        let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
+        let mut data_path = dirs.data_dir().to_path_buf();
+        
+        if std::path::Path::exists(&data_path) {
+            data_path.push(name);
+            confy::store_path(&data_path, self)?;
+            Ok(())
+            
+        } else {
+            match std::fs::create_dir(&data_path) {
+                Ok(_) => println!("no data directory exists. creating"),
+                Err(err) => println!("failed to create directory\n{err}"),
+            };
+            data_path.push(name);
+            confy::store_path(&data_path, self)?;
+            Ok(())
+        }    
+    }
+}
+
+
 
 
 // ===================

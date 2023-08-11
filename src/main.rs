@@ -16,7 +16,7 @@ pub use tui::{
 };
 
 pub use serde::{Serialize, Deserialize};
-
+pub use directories::*;
 
 // mod files
 mod structs;
@@ -33,31 +33,42 @@ fn save_data(config: &Config) {
     confy::store("salatui", "config", config).unwrap();
 }
 
-fn output_data() {
+fn output_data(conf: &Config) {
     // clipboard testing
     // let mut x = arboard::Clipboard::new().unwrap();
     // let selection = LinuxClipboardKind::Primary;
     // arboard::Clipboard::get(&mut x);
     // println!("{:?}",x.get().clipboard(selection).text());
-    
-    let mut conf = Config::default();
-    conf.display.show_raw_output = true;
-    let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
-    conf.provider = Provider::Data(timeset.name.to_owned());
+    // let load_dat = TimeSetData::load("GDh. Vilingili");
+    // dbg!(load_dat);
+    // conf.display.show_raw_output = true;
+    // let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
+    // timeset.store(&timeset.name).unwrap();
+    // conf.provider = Provider::Data(timeset.name.to_owned());
     
     // conf.provider = Provider::Calculation(CalculationMethod::default());
-    save_data(&conf);
-    let loaded: Config = confy::load("salatui", "config").unwrap();
+    // save_data(&conf);
+    // let loaded: Config = confy::load("salatui", "config").unwrap();
     // salat_times(&conf, &timeset);
-    println!("[output data]\n{:?}",loaded);
+    
+    match &conf.provider {
+        Provider::Data(name) => {
+            let loaded = TimeSetData::load(&name);
+            println!("[output data]\n{:?}",loaded);
+        },
+        Provider::Manual => {},
+        Provider::Calculation(_) =>{},
+    }
+    
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let args = Args::parse();
     
+    let mut conf = confy::load("salatui", "config").unwrap();
     if args.output {
-        output_data();
+        output_data(&conf);
         return Ok(());
     }
     
