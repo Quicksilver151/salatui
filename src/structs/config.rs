@@ -9,14 +9,18 @@ pub struct CalculationMethod {
     
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Provider {
-    #[default]
-    Manual,
     Data(String),
     Calculation(CalculationMethod),
 }
+impl Default for Provider {
+    fn default() -> Self {
+        Self::Data(String::from(""))
+    }
+}
+
 
 // [Display] ===================================
 
@@ -69,6 +73,7 @@ pub enum RawOutputMode {
     Json,
     #[default]
     RawData,
+    TOML,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RawOutput {
@@ -92,19 +97,43 @@ impl Default for RawOutput {
     }
 }
 
-
 // ============================================
 //                  [CONFIG] 
 // ============================================
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Config{
+pub struct Config {
     pub provider: Provider,
     pub display: Display,
     pub notifications: Notifications,
     pub raw_output: RawOutput,
 }
-
+impl Config {
+    
+    pub fn init() -> Result<(), confy::ConfyError> {
+        
+        let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
+        let mut confdir = dirs.config_dir().to_path_buf();
+        confdir.push("config.toml");
+        
+        if std::path::Path::exists(&confdir){
+            Ok(())
+        } else {
+            println!("config is missing\ncreating new config with defaults");
+            let defaults = Config::default();
+            confy::store("salatui", "config", defaults)
+        }
+    }
+    
+    pub fn load() -> Result<Config, confy::ConfyError> {
+        confy::load("salatui", "config")
+    }
+    
+    pub fn save(&self) -> Result<(), confy::ConfyError> {
+        confy::store("salatui", "config", self)
+    }    
+    
+}
 
 
 

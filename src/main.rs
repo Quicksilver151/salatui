@@ -29,11 +29,7 @@ pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
 
-fn save_data(config: &Config) {
-    confy::store("salatui", "config", config).unwrap();
-}
-
-fn output_data(conf: &Config) {
+fn output_data(conf: &mut Config) {
     // clipboard testing
     // let mut x = arboard::Clipboard::new().unwrap();
     // let selection = LinuxClipboardKind::Primary;
@@ -53,22 +49,27 @@ fn output_data(conf: &Config) {
     
     match &conf.provider {
         Provider::Data(name) => {
-            let loaded = TimeSetData::load(&name);
-            println!("[output data]\n{:?}",loaded);
+            let loaded = TimeSetData::load(name);
+            println!("[output data]\n{:?}",loaded.unwrap());
         },
-        Provider::Manual => {},
         Provider::Calculation(_) =>{},
     }
     
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    
+    Config::init().unwrap();
     let args = Args::parse();
+    let mut conf = match Config::load(){
+        Ok(conf) => conf,
+        Err(err) => {
+            println!("{err}\nconfig is broken\nloading a new config from defaults");
+            Config::default()
+        }
+    };
     
-    let mut conf = confy::load("salatui", "config").unwrap();
     if args.output {
-        output_data(&conf);
+        output_data(&mut conf);
         return Ok(());
     }
     

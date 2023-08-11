@@ -16,6 +16,7 @@ pub fn salat_times(conf: &Config, timeset: &TimeSetData){
             RawOutputMode::Custom => todo!(),
             RawOutputMode::Json => todo!(),
             RawOutputMode::RawData => {final_string += &format!("{:?}", timeset.data[0])},
+            RawOutputMode::TOML => {},
         };
     };
     
