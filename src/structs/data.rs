@@ -1,4 +1,6 @@
 
+use chrono::Datelike;
+
 use crate::*;
 
 
@@ -46,6 +48,18 @@ impl TimeSetData {
             Ok(())
         }    
     }
+    
+    pub fn today_data(&self) -> PrayerTime {
+        let current_time = chrono::offset::Local::now();
+        let current_date = current_time.ordinal0() as usize;
+        
+        PrayerTime::from_vec(self.data[current_date].clone())
+    }
+    
+    pub fn to_prayertime(&self, day: usize) -> PrayerTime {
+        PrayerTime::from_vec(self.data[day].to_owned())
+    }
+    
 }
 
 

@@ -1,4 +1,4 @@
-use chrono::{Timelike, Datelike};
+use chrono::{Timelike, Datelike, Duration};
 // crates
 pub use crossterm::{event, execute, terminal};
 
@@ -55,10 +55,14 @@ fn output_data(conf: &mut Config) {
     match &conf.provider {
         Provider::Data(name) => {
             let loaded = TimeSetData::load(name).unwrap();
-            let today_dataset = loaded.data[current_date].clone();
-            
-            println!("[output data]\n{:?}",today_dataset);
+            loop {
+                let today_data = loaded.today_data();
+                std::thread::sleep(std::time::Duration::from_secs(1));
+                println!("[output data]\n{:?}",today_data);
+            }
+            // let today_dataset = PrayerTime::from_vec(loaded.data[current_date].clone());
         },
+        
         Provider::Calculation(_) =>{},
     }
     
