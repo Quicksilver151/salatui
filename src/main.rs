@@ -1,3 +1,4 @@
+use chrono::{Timelike, Datelike};
 // crates
 pub use crossterm::{event, execute, terminal};
 
@@ -46,11 +47,17 @@ fn output_data(conf: &mut Config) {
     // save_data(&conf);
     // let loaded: Config = confy::load("salatui", "config").unwrap();
     // salat_times(&conf, &timeset);
+    let current_time = chrono::offset::Local::now();
+    let current_date = current_time.ordinal0() as usize;
+    // dbg!(current_time.num_seconds_from_midnight() / 60);
+    // dbg!(current_date);
     
     match &conf.provider {
         Provider::Data(name) => {
-            let loaded = TimeSetData::load(name);
-            println!("[output data]\n{:?}",loaded.unwrap());
+            let loaded = TimeSetData::load(name).unwrap();
+            let today_dataset = loaded.data[current_date].clone();
+            
+            println!("[output data]\n{:?}",today_dataset);
         },
         Provider::Calculation(_) =>{},
     }
@@ -70,6 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     if args.output {
         output_data(&mut conf);
+        // salat_times(&mut conf, timeset);
         return Ok(());
     }
     

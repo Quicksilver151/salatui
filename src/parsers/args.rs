@@ -8,7 +8,7 @@ pub struct Args {
     #[arg(short, long, action)]
     pub output: bool,
     
-    /// Use the config file from this path
+    /// Use the config file from the given <CONFIG> path
     #[arg(short, long)]
     pub config: Option<std::path::PathBuf>,
     

@@ -2,11 +2,10 @@ use crate::*;
 
 //chrono needed
 pub fn salat_times(conf: &Config, timeset: &TimeSetData){
-    // let timeset = match &conf.provider {
-    //     Provider::Data(timeset) => timeset,
-    //     Provider::Calculation(_) => todo!(),
-    //     Provider::Manual => todo!(),
-    // };
+    let timeset = match &conf.provider {
+        Provider::Data(timesetname) => TimeSetData::load(timesetname).unwrap(),
+        Provider::Calculation(_) => todo!("get a timeset from a calculation"),
+    };
     
     let mut final_string = String::new();
     
