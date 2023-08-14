@@ -1,5 +1,6 @@
 
 pub mod config;
+
 pub use config::*;
 
 pub mod input;
@@ -45,4 +46,18 @@ impl PrayerTime {
         }
     }
 }
+
+
+#[test]
+fn test_prayertime() {
+    let expected = PrayerTime { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let result = PrayerTime::from_vec(vec![77, 225, 293, 365, 736, 932, 1098, 1171]);
+    let result2 = TimeSetData::load("GDh. Vilingili").unwrap().to_prayertime(225);
+    assert_eq!(expected, result);
+    assert_eq!(expected, result2);
+}
+
+
+
+
 
