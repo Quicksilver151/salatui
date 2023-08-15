@@ -62,12 +62,12 @@ impl PrayerTime {
         let time_list: Vec<u32> = self.to_vec();
         match config.display.format {
             TimeFormat::Twelve => {
+                return time_list.iter().map(to_time).map(|t| format!("{: >2}:{:0>2} {}",{if t.0 >13{t.0%12}else{t.0}},t.1, {if t.0 > 11{"PM"} else{"AM"} })).collect();
             },
             TimeFormat::TwentyFour => {
-                return time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2}",t.0,t.1)).collect();
+                return time_list.iter().map(to_time).map(|t| format!("{: >2}:{:0>2}",t.0,t.1)).collect();
             },
         }
-        vec![]
     }
 }
 
@@ -79,10 +79,19 @@ fn to_time(minutes: &u32) -> (u32, u32){
 fn test_format() {
     let value = PrayerTime { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
     let mut config = Config::load().unwrap();
-    config.display.format = TimeFormat::TwentyFour;
+    
+    config.display.format = TimeFormat::Twelve;
+    let expected:Vec<String> = vec![" 4:53 AM", " 6:05 AM", "12:16 PM", " 3:32 PM", " 6:18 PM", " 7:31 PM"]
+        .into_iter().map(|x|x.to_owned()).collect();
     let result = value.format(&config);
-    let expected:Vec<String> = vec![];
-    assert_eq!(expected, result);
+    
+    config.display.format = TimeFormat::TwentyFour;
+    let expected2:Vec<String> = vec![" 4:53", " 6:05", "12:16", "15:32", "18:18", "19:31"]
+        .into_iter().map(|x|x.to_owned()).collect();
+    let result2 = value.format(&config);
+
+    assert_eq!(result , expected );
+    assert_eq!(result2, expected2);
 }
 
 #[test]
