@@ -1,4 +1,3 @@
-use chrono::{Timelike, Datelike, Duration};
 // crates
 pub use crossterm::{event, execute, terminal};
 
@@ -18,6 +17,7 @@ pub use tui::{
 
 pub use serde::{Serialize, Deserialize};
 pub use directories::*;
+use chrono::*;
 
 // mod files
 mod structs;
@@ -30,7 +30,7 @@ pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
 
-fn output_data(conf: &mut Config) {
+fn output_data(config: &mut Config) {
     // clipboard testing
     // let mut x = arboard::Clipboard::new().unwrap();
     // let selection = LinuxClipboardKind::Primary;
@@ -48,15 +48,15 @@ fn output_data(conf: &mut Config) {
     // let loaded: Config = confy::load("salatui", "config").unwrap();
     // salat_times(&conf, &timeset);
     let current_time = chrono::offset::Local::now();
-    let current_date = current_time.ordinal0() as usize;
+    let current_day = current_time.ordinal0() as usize;
     // dbg!(current_time.num_seconds_from_midnight() / 60);
     // dbg!(current_date);
     
-    match &conf.provider {
+    match &config.provider {
         Provider::Data(name) => {
             let loaded = TimeSetData::load(name).unwrap();
             loop {
-                let today_data = loaded.today_data();
+                let today_data = loaded.data_from_day(current_day);
                 std::thread::sleep(std::time::Duration::from_secs(1));
                 println!("[output data]\n{:?}",today_data);
             }
@@ -71,8 +71,8 @@ fn output_data(conf: &mut Config) {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Config::init().unwrap();
     let args = Args::parse();
-    let mut conf = match Config::load(){
-        Ok(conf) => conf,
+    let mut config = match Config::load(){
+        Ok(config) => config,
         Err(err) => {
             println!("{err}\nconfig is broken\nloading a new config from defaults");
             Config::default()
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     if args.output {
-        output_data(&mut conf);
+        output_data(&mut config);
         // salat_times(&mut conf, timeset);
         return Ok(());
     }

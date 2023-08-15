@@ -56,7 +56,7 @@ impl TimeSetData {
         PrayerTime::from_vec(self.data[current_date].clone())
     }
     
-    pub fn to_prayertime(&self, day: usize) -> PrayerTime {
+    pub fn data_from_day(&self, day: usize) -> PrayerTime {
         PrayerTime::from_vec(self.data[day].to_owned())
     }
     
