@@ -74,9 +74,12 @@ impl PrayerTime {
         let time_list: Vec<String> = self.format(config);
         let outconf = &config.raw_output;
         match config.raw_output.mode {
-            RawOutputMode::Array   => todo!(),
-            RawOutputMode::Custom  => todo!(),
+            RawOutputMode::Array   => format!("{:?}", time_list),
+            RawOutputMode::Custom  => {
+                todo!();
+            },
             RawOutputMode::TOML    => todo!(),
+            RawOutputMode::FormattedJson => serde_json::to_string_pretty(self).unwrap_or_default(),
             RawOutputMode::Json    => serde_json::to_string(self).unwrap_or_default(),
             RawOutputMode::RawData => {
                 let mut string = "".to_owned();

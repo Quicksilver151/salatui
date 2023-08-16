@@ -9,15 +9,15 @@ pub fn salat_times(conf: &Config, timeset: &TimeSetData){
     
     let mut final_string = String::new();
     
-    if conf.display.show_raw_output {
-        match conf.raw_output.mode {
-            RawOutputMode::Array => todo!(),
-            RawOutputMode::Custom => todo!(),
-            RawOutputMode::Json => todo!(),
-            RawOutputMode::RawData => {final_string += &format!("{:?}", timeset.data[0])},
-            RawOutputMode::TOML => {},
-        };
-    };
+    // if conf.display.show_raw_output {
+    //     match conf.raw_output.mode {
+    //         RawOutputMode::Array => todo!(),
+    //         RawOutputMode::Custom => todo!(),
+    //         RawOutputMode::Json => todo!(),
+    //         RawOutputMode::RawData => {final_string += &format!("{:?}", timeset.data[0])},
+    //         RawOutputMode::TOML => {},
+    //     };
+    // };
     
     dbg!(final_string);
     

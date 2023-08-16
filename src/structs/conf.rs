@@ -70,6 +70,7 @@ impl Default for Notifications {
 pub enum RawOutputMode {
     Array,
     Custom,
+    FormattedJson,
     Json,
     #[default]
     RawData,
@@ -92,7 +93,7 @@ impl Default for RawOutput {
     fn default() -> Self {
         let mode = RawOutputMode::default();
         let pool = false;
-        let raw_seperator = String::default();
+        let raw_seperator = String::from("\n");
         let custom_string = String::from("[%fhmp, %shmp, &dhmp, %ahmp, %mhmp, %ihmp]");
         
         RawOutput { mode, pool, raw_seperator,custom_string}
