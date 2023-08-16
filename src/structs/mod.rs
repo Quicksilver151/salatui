@@ -69,6 +69,29 @@ impl PrayerTime {
             },
         }
     }
+    pub fn output_format(&self, config: &Config) -> String {
+        // use serde_json::to_writer_pretty;
+        let time_list: Vec<String> = self.format(config);
+        let outconf = &config.raw_output;
+        match config.raw_output.mode {
+            RawOutputMode::Array   => todo!(),
+            RawOutputMode::Custom  => todo!(),
+            RawOutputMode::TOML    => todo!(),
+            RawOutputMode::Json    => serde_json::to_string(self).unwrap_or_default(),
+            RawOutputMode::RawData => {
+                let mut string = "".to_owned();
+                for time in time_list {
+                    if &time == self.format(config).last().unwrap(){
+                        string.push_str(&time);
+                        continue;
+                    }
+                    string.push_str(&format!("{}{}",time,outconf.raw_seperator))
+                }
+                string
+            }
+        }
+        // let 
+    }
 }
 
 fn to_time(minutes: &u32) -> (u32, u32){
@@ -78,7 +101,7 @@ fn to_time(minutes: &u32) -> (u32, u32){
 #[test]
 fn test_format() {
     let value = PrayerTime { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
-    let mut config = Config::load().unwrap();
+    let mut config = Config::load().unwrap_or_default();
     
     config.display.format = TimeFormat::Twelve;
     let expected:Vec<String> = vec![" 4:53 AM", " 6:05 AM", "12:16 PM", " 3:32 PM", " 6:18 PM", " 7:31 PM"]

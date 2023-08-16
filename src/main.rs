@@ -57,8 +57,12 @@ fn output_data(config: &mut Config) {
             let loaded = TimeSetData::load(name).unwrap();
             loop {
                 let today_data = loaded.data_from_day(current_day);
+                let today_data = today_data.output_format(config);
+                println!("{}",today_data);
+                if !config.raw_output.pool {
+                    break;
+                }
                 std::thread::sleep(std::time::Duration::from_secs(1));
-                println!("[output data]\n{:?}",today_data);
             }
             // let today_dataset = PrayerTime::from_vec(loaded.data[current_date].clone());
         },

@@ -78,6 +78,7 @@ pub enum RawOutputMode {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RawOutput {
     pub mode: RawOutputMode,
+    pub pool: bool,
     pub raw_seperator: String,
     pub custom_string: String
 }
@@ -90,10 +91,11 @@ impl RawOutput {
 impl Default for RawOutput {
     fn default() -> Self {
         let mode = RawOutputMode::default();
+        let pool = false;
         let raw_seperator = String::default();
         let custom_string = String::from("[%fhmp, %shmp, &dhmp, %ahmp, %mhmp, %ihmp]");
         
-        RawOutput { mode, raw_seperator,custom_string}
+        RawOutput { mode, pool, raw_seperator,custom_string}
     }
 }
 
@@ -128,10 +130,20 @@ impl Config {
     pub fn load() -> Result<Config, confy::ConfyError> {
         confy::load("salatui", "config")
     }
+    pub fn load_valid() -> Config {
+        match Self::load() {
+            Ok(config) => config,
+            Err(err) => {
+                println!("failed to load due to\n{err}");
+                println!("using default data");
+                Self::default()
+            }
+        }
+    }
     
     pub fn save(&self) -> Result<(), confy::ConfyError> {
         confy::store("salatui", "config", self)
-    }    
+    }
     
 }
 
