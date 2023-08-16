@@ -1,13 +1,13 @@
 use crate::*;
 
 //chrono needed
-pub fn salat_times(conf: &Config, timeset: &TimeSetData){
-    let timeset = match &conf.provider {
-        Provider::Data(timesetname) => TimeSetData::load(timesetname).unwrap(),
-        Provider::Calculation(_) => todo!("get a timeset from a calculation"),
-    };
+// pub fn salat_times(conf: &Config, timeset: &TimeSetData){
+    // let timeset = match &conf.provider {
+        // Provider::Data(timesetname) => TimeSetData::load(timesetname).unwrap(),
+        // Provider::Calculation(_) => todo!("get a timeset from a calculation"),
+    // };
     
-    let mut final_string = String::new();
+    // let mut final_string = String::new();
     
     // if conf.display.show_raw_output {
     //     match conf.raw_output.mode {
@@ -19,8 +19,8 @@ pub fn salat_times(conf: &Config, timeset: &TimeSetData){
     //     };
     // };
     
-    dbg!(final_string);
+    // dbg!(final_string);
     
     
     
-}
+// }

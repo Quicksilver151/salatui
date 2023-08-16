@@ -59,6 +59,12 @@ impl PrayerTime {
     }
     
     pub fn format(&self, config: &Config) -> Vec<String> {
+        let mut data_list: Vec<String> = vec![self.index.to_string(), self.day.to_string()];
+        data_list.append(&mut self.format_time(config));
+        data_list
+    }
+    
+    pub fn format_time(&self, config: &Config) -> Vec<String> {
         let time_list: Vec<u32> = self.to_vec();
         match config.display.format {
             TimeFormat::Twelve => {
@@ -66,6 +72,9 @@ impl PrayerTime {
             },
             TimeFormat::TwentyFour => {
                 return time_list.iter().map(to_time).map(|t| format!("{: >2}:{:0>2}",t.0,t.1)).collect();
+            },
+            TimeFormat::Minutes => {
+                return time_list.iter().map(|t| format!("{}",t)).collect();
             },
         }
     }
@@ -79,8 +88,25 @@ impl PrayerTime {
                 todo!();
             },
             RawOutputMode::TOML    => todo!(),
-            RawOutputMode::FormattedJson => serde_json::to_string_pretty(self).unwrap_or_default(),
-            RawOutputMode::Json    => serde_json::to_string(self).unwrap_or_default(),
+            RawOutputMode::PrettyJson => {
+                format!(
+"{{
+  \"index\":\"{}\",
+  \"day\":\"{}\",
+  \"fajr\":\"{}\",
+  \"sun\":\"{}\",
+  \"dhuhur\":\"{}\",
+  \"asr\":\"{}\",
+  \"magrib\":\"{}\",
+  \"isha\":\"{}\"
+}}",
+time_list[0],time_list[1],time_list[2],time_list[3],time_list[4],time_list[5],time_list[6],time_list[7]
+)
+            },
+            RawOutputMode::Json    => {
+                format!("{{\"index\":\"{}\",\"day\":\"{}\",\"fajr\":\"{}\",\"sun\":\"{}\",\"dhuhur\":\"{}\",\"asr\":\"{}\",\"magrib\":\"{}\",\"isha\":\"{}\"}}",
+                        time_list[0],time_list[1],time_list[2],time_list[3],time_list[4],time_list[5],time_list[6],time_list[7])
+            }//TODO: maybe fix up serde to do this properly instead of manually?
             RawOutputMode::RawData => {
                 let mut string = "".to_owned();
                 for time in time_list {
@@ -104,15 +130,15 @@ fn to_time(minutes: &u32) -> (u32, u32){
 #[test]
 fn test_format() {
     let value = PrayerTime { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
-    let mut config = Config::load().unwrap_or_default();
+    let mut config = Config::default();
     
     config.display.format = TimeFormat::Twelve;
-    let expected:Vec<String> = vec![" 4:53 AM", " 6:05 AM", "12:16 PM", " 3:32 PM", " 6:18 PM", " 7:31 PM"]
+    let expected:Vec<String> = vec!["77", "225", " 4:53 AM", " 6:05 AM", "12:16 PM", " 3:32 PM", " 6:18 PM", " 7:31 PM"]
         .into_iter().map(|x|x.to_owned()).collect();
     let result = value.format(&config);
     
     config.display.format = TimeFormat::TwentyFour;
-    let expected2:Vec<String> = vec![" 4:53", " 6:05", "12:16", "15:32", "18:18", "19:31"]
+    let expected2:Vec<String> = vec!["77", "225", " 4:53", " 6:05", "12:16", "15:32", "18:18", "19:31"]
         .into_iter().map(|x|x.to_owned()).collect();
     let result2 = value.format(&config);
 

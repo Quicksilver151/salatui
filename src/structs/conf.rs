@@ -29,6 +29,7 @@ pub enum TimeFormat {
     #[default]
     Twelve,
     TwentyFour,
+    Minutes,
 }
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub enum TimeIndicator {
@@ -70,7 +71,7 @@ impl Default for Notifications {
 pub enum RawOutputMode {
     Array,
     Custom,
-    FormattedJson,
+    PrettyJson,
     Json,
     #[default]
     RawData,
