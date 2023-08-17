@@ -84,29 +84,10 @@ impl PrayerTime {
         let outconf = &config.raw_output;
         match config.raw_output.mode {
             RawOutputMode::Array   => format!("{:?}", time_list),
-            RawOutputMode::Custom  => {
-                todo!();
-            },
+            RawOutputMode::Custom  => todo!(),
             RawOutputMode::TOML    => todo!(),
-            RawOutputMode::PrettyJson => {
-                format!(
-"{{
-  \"index\":\"{}\",
-  \"day\":\"{}\",
-  \"fajr\":\"{}\",
-  \"sun\":\"{}\",
-  \"dhuhur\":\"{}\",
-  \"asr\":\"{}\",
-  \"magrib\":\"{}\",
-  \"isha\":\"{}\"
-}}",
-time_list[0],time_list[1],time_list[2],time_list[3],time_list[4],time_list[5],time_list[6],time_list[7]
-)
-            },
-            RawOutputMode::Json    => {
-                format!("{{\"index\":\"{}\",\"day\":\"{}\",\"fajr\":\"{}\",\"sun\":\"{}\",\"dhuhur\":\"{}\",\"asr\":\"{}\",\"magrib\":\"{}\",\"isha\":\"{}\"}}",
-                        time_list[0],time_list[1],time_list[2],time_list[3],time_list[4],time_list[5],time_list[6],time_list[7])
-            }//TODO: maybe fix up serde to do this properly instead of manually?
+            RawOutputMode::PrettyJson => to_json(time_list, true),
+            RawOutputMode::Json    => to_json(time_list, false),
             RawOutputMode::RawData => {
                 let mut string = "".to_owned();
                 for time in time_list {
@@ -125,6 +106,42 @@ time_list[0],time_list[1],time_list[2],time_list[3],time_list[4],time_list[5],ti
 
 fn to_time(minutes: &u32) -> (u32, u32){
     (minutes / 60, minutes % 60)
+}
+
+fn to_json(time_list: Vec<String>, pretty: bool) -> String {
+    if pretty {
+    format!(
+    "{{
+  \"index\":\"{}\",
+  \"day\":\"{}\",
+  \"fajr\":\"{}\",
+  \"sun\":\"{}\",
+  \"dhuhur\":\"{}\",
+  \"asr\":\"{}\",
+  \"magrib\":\"{}\",
+  \"isha\":\"{}\"
+}}",
+time_list[0],
+time_list[1],
+time_list[2],
+time_list[3],
+time_list[4],
+time_list[5],
+time_list[6],
+time_list[7],
+)
+    } else {
+    format!("{{\"index\":\"{}\",\"day\":\"{}\",\"fajr\":\"{}\",\"sun\":\"{}\",\"dhuhur\":\"{}\",\"asr\":\"{}\",\"magrib\":\"{}\",\"isha\":\"{}\"}}",
+            time_list[0],
+            time_list[1],
+            time_list[2],
+            time_list[3],
+            time_list[4],
+            time_list[5],
+            time_list[6],
+            time_list[7],
+            )
+    }
 }
 
 #[test]
