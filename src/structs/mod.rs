@@ -58,6 +58,14 @@ impl PrayerTime {
         ]
     }
     
+    pub fn get_current_index(&self) -> usize {
+        use chrono::Timelike;
+        let current_time = chrono::offset::Local::now();
+        let minute = current_time.hour() * 60 + current_time.minute();
+        
+        self.to_vec().into_iter().position(|x| x > minute).unwrap_or(0)
+    }
+    
     pub fn format(&self, config: &Config) -> Vec<String> {
         let mut data_list: Vec<String> = vec![self.index.to_string(), self.day.to_string()];
         data_list.append(&mut self.format_time(config));
@@ -66,6 +74,7 @@ impl PrayerTime {
     
     pub fn format_time(&self, config: &Config) -> Vec<String> {
         let time_list: Vec<u32> = self.to_vec();
+        
         match config.display.format {
             TimeFormat::Twelve => {
                 return time_list.iter().map(to_time).map(|t| format!("{: >2}:{:0>2} {}",{if t.0 >13{t.0%12}else{t.0}},t.1, {if t.0 > 11{"PM"} else{"AM"} })).collect();
@@ -78,10 +87,16 @@ impl PrayerTime {
             },
         }
     }
+    
+    
     pub fn output_format(&self, config: &Config) -> String {
         // use serde_json::to_writer_pretty;
-        let time_list: Vec<String> = self.format(config);
+        let mut time_list: Vec<String> = self.format(config);
         let outconf = &config.raw_output;
+        
+        let current = self.get_current_index().to_string();
+        time_list.append(&mut vec![current]);
+        
         match config.raw_output.mode {
             RawOutputMode::Array   => format!("{:?}", time_list),
             RawOutputMode::Custom  => todo!(),
@@ -90,9 +105,9 @@ impl PrayerTime {
             RawOutputMode::Json    => to_json(time_list, false),
             RawOutputMode::RawData => {
                 let mut string = "".to_owned();
-                for time in time_list {
-                    if &time == self.format(config).last().unwrap(){
-                        string.push_str(&time);
+                for time in time_list.iter() {
+                    if time == time_list.last().unwrap(){
+                        string.push_str(time);
                         continue;
                     }
                     string.push_str(&format!("{}{}",time,outconf.raw_seperator))
@@ -119,7 +134,8 @@ fn to_json(time_list: Vec<String>, pretty: bool) -> String {
   \"dhuhur\":\"{}\",
   \"asr\":\"{}\",
   \"magrib\":\"{}\",
-  \"isha\":\"{}\"
+  \"isha\":\"{}\",
+  \"current\":\"{}\"
 }}",
 time_list[0],
 time_list[1],
@@ -129,9 +145,10 @@ time_list[4],
 time_list[5],
 time_list[6],
 time_list[7],
+time_list[8],
 )
     } else {
-    format!("{{\"index\":\"{}\",\"day\":\"{}\",\"fajr\":\"{}\",\"sun\":\"{}\",\"dhuhur\":\"{}\",\"asr\":\"{}\",\"magrib\":\"{}\",\"isha\":\"{}\"}}",
+    format!("{{\"index\":\"{}\",\"day\":\"{}\",\"fajr\":\"{}\",\"sun\":\"{}\",\"dhuhur\":\"{}\",\"asr\":\"{}\",\"magrib\":\"{}\",\"isha\":\"{}\",\"current\":\"{}\"}}",
             time_list[0],
             time_list[1],
             time_list[2],
@@ -140,6 +157,7 @@ time_list[7],
             time_list[5],
             time_list[6],
             time_list[7],
+            time_list[8],
             )
     }
 }
