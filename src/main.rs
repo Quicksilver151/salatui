@@ -125,22 +125,19 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> 
         input_map.reset();
         if let Key(key) = event::read()? {
             match key.code {
-                KeyCode::Char('q') => input_map.quit   = true,
-                KeyCode::Char('r') => input_map.rename = true,
-                
                 KeyCode::Right | KeyCode::Enter => input_map.enter = true,
                 KeyCode::Left  | KeyCode::Esc   => input_map.back  = true,
                 
                 KeyCode::Up   | KeyCode::BackTab => input_map.up   = true,
                 KeyCode::Down | KeyCode::Tab     => input_map.down = true,
                 
-                
+                KeyCode::Char(x) => input_map.command = x,
                 _ => {}
             }
             
         }
         // dbg!(&input_map);
-        if input_map.quit{return Ok(())};
+        if input_map.command=='q'{return Ok(())};
         terminal.draw(|f| ui(f, input_map))?;
     }
 }
@@ -156,8 +153,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
         block
     }
     
-    let layouts = MainLayout::from(f,input_map.shrink);
-    let menu_block = new_block(input_map.get_current());
+    let layouts = MainLayout::from(f,input_map.command == 's');
+    let title = &input_map.get_current();
+    let menu_block = new_block(title);
     
     let block_1 = new_block("1");
     let block_2 = new_block("2");

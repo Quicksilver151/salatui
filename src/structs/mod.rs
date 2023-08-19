@@ -12,9 +12,10 @@ pub mod ui;
 pub use ui::*;
 
 
-
+#[derive(Debug, Default)]
 pub struct AppState {
     pub prayertime: PrayerTime,
+    pub inputmap: InputMap,
 }
 
 use serde::*;

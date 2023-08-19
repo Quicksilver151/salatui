@@ -71,9 +71,9 @@ impl Default for Notifications {
 pub enum RawOutputMode {
     Array,
     Custom,
+    #[default]
     PrettyJson,
     Json,
-    #[default]
     RawData,
     TOML,
 }
