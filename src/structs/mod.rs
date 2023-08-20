@@ -8,14 +8,18 @@ pub use input::*;
 pub mod data;
 pub use data::*;
 
-pub mod ui;
-pub use ui::*;
-
+#[derive(Debug, Default)]
+pub struct UI {
+    name: String,
+    index: u8,
+}
 
 #[derive(Debug, Default)]
 pub struct AppState {
+    pub ui: UI,
     pub prayertime: PrayerTime,
-    pub inputmap: InputMap,
+    pub input_map: InputMap,
+    pub input_char: char,
 }
 
 use serde::*;

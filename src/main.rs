@@ -98,10 +98,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let mut input_map: InputMap = InputMap::default();
+    let mut app_state: AppState = AppState::default();
     
     // main
-    let result = run_app(&mut terminal, &mut input_map);
+    let result = run_app(&mut terminal, &mut app_state);
     
     // end
     disable_raw_mode()?;
@@ -118,67 +118,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // APPLICATION
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, input_map: &mut InputMap) -> Result<(), std::io::Error> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> Result<(), std::io::Error> {
     
-    terminal.draw(|f| ui(f, input_map))?;
+    terminal.draw(|f| ui(f, app_state))?;
     loop {
-        input_map.reset();
+        app_state.input_map.reset();
         if let Key(key) = event::read()? {
             match key.code {
-                KeyCode::Right | KeyCode::Enter => input_map.enter = true,
-                KeyCode::Left  | KeyCode::Esc   => input_map.back  = true,
+                KeyCode::Right | KeyCode::Enter => app_state.input_map.enter = true,
+                KeyCode::Left  | KeyCode::Esc  | KeyCode::Backspace => app_state.input_map.back  = true,
                 
-                KeyCode::Up   | KeyCode::BackTab => input_map.up   = true,
-                KeyCode::Down | KeyCode::Tab     => input_map.down = true,
+                KeyCode::Up   | KeyCode::BackTab => app_state.input_map.up   = true,
+                KeyCode::Down | KeyCode::Tab     => app_state.input_map.down = true,
                 
-                KeyCode::Char(x) => input_map.command = x,
+                KeyCode::Char(x) => app_state.input_char = x,
                 _ => {}
             }
             
         }
         // dbg!(&input_map);
-        if input_map.command=='q'{return Ok(())};
-        terminal.draw(|f| ui(f, input_map))?;
+        if app_state.input_char=='q'{return Ok(())};
+        terminal.draw(|f| ui(f, app_state))?;
     }
 }
 
 // INTERFACE
-fn ui<B: Backend>(f: &mut Frame<B>, input_map: &mut InputMap){
-    
-    fn new_block(title: &str) -> Block{
-        let block = Block::default()
-            .title(title)
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded);
-        block
-    }
-    
-    let layouts = MainLayout::from(f,input_map.command == 's');
-    let title = &input_map.get_current();
-    let menu_block = new_block(title);
-    
-    let block_1 = new_block("1");
-    let block_2 = new_block("2");
-    let block_3 = new_block("3");
-    let block_4 = new_block("4");
-    
-    let titles = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Spans::from).collect();
-    
-    let tabthings = Tabs::new(titles)
-    .block(Block::default().title("Tabs").borders(Borders::ALL))
-    .style(Style::default().fg(Color::White))
-    .highlight_style(Style::default().fg(Color::Yellow))
-    .divider(DOT);
-    
-    f.render_widget(block_1, layouts.settings[0]);
-    f.render_widget(block_2, layouts.settings[1]);
-    f.render_widget(block_3, layouts.settings[2]);
-    f.render_widget(block_4, layouts.settings[3]);
-    
-    f.render_widget(tabthings, layouts.menu[0]);
-    
-    f.render_widget(menu_block, layouts.menu[0]);
-}
 
 // fn ui<B: Backend>(f: &mut Frame<B>) {
 //     let parent_chunk: Vec<tui::layout::Rect> = Layout::default()

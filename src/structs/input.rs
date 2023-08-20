@@ -1,4 +1,6 @@
-#[derive(Debug, Default)]
+use crate::*;
+
+#[derive(Debug, Default, Clone, Copy)]
 pub struct InputMap {
     pub enter: bool,
     pub back: bool,
@@ -7,19 +9,18 @@ pub struct InputMap {
     pub left: bool,
     pub down: bool,
     pub right: bool,
-    
-    pub command: char,
 }
+
 impl InputMap {
     pub fn reset(&mut self) {
         *self = InputMap::default();
     }
-    pub fn get_current(&mut self) -> String {
-        if self.enter {return String::from("enter ")}
-        if self.back  {return String::from("back  ")}
-        if self.up    {return String::from("up    ")}
-        if self.down  {return String::from("down  ")}
-        self.command.to_string()
+    pub fn get_current(&self) -> Option<String> {
+        if self.enter {return Some(String::from("enter "))}
+        if self.back  {return Some(String::from("back  "))}
+        if self.up    {return Some(String::from("up    "))}
+        if self.down  {return Some(String::from("down  "))}
+        None   
     }
 }
 
