@@ -5,7 +5,11 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
-pub use tui::layout::{Layout, Direction, Constraint, Rect};
+pub use tui::{
+    layout::{Layout, Direction, Constraint, Rect},
+    text::Span,
+    style::Modifier
+};
 
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
@@ -26,22 +30,74 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         block
     }
     let root_container:RootContainer = RootContainer::new(f);
-    let layouts = MainContainer::from(root_container.center);
-    let title = input_map.get_current().unwrap_or(String::new());
-    let menu_block = new_block_no_outline(&title);
+    let layouts = if app_state.fullscreen {
+        MainContainer::from(f.size())
+    } else {
+        MainContainer::from(root_container.center)
+    };
     
-    let block_1 = new_block("info");
+    let title = input_map.get_current().unwrap_or(String::new());
+    let menu_block = new_block(&title);
+    let header = new_block("info");
     let block_2 = new_block("");
     let block_3 = new_block("main");
-    let block_4 = new_block("commands");
+    let commands_block: Block = new_block("commands");
     
-    let titles = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Spans::from).collect();
+    // let text = vec![
+    //     Spans::from(vec![
+    //                 Span::styled("q", Style::default().add_modifier(Modifier::BOLD).fg(Color::Blue)),
+    //                 Span::styled("uit", Style::default()),
+    //                 
+    //                 Span::styled(" | ", Style::default()),
+    //                 
+    //                 Span::styled("c", Style::default().add_modifier(Modifier::BOLD).fg(Color::Blue)),
+    //                 Span::styled("onfig", Style::default()),
+    //                 
+    //                 Span::styled(" | ", Style::default()),
+    //                 
+    //                 Span::styled("f", Style::default().add_modifier(Modifier::BOLD).fg(Color::Blue)),
+    //                 Span::styled("fullscreen", Style::default()),
+    //     ])
+    // ];
     
-    let tabthings = Tabs::new(titles)
-    .block(Block::default().title("Tabs").borders(Borders::ALL))
-    .style(Style::default().fg(Color::White))
-    .highlight_style(Style::default().fg(Color::Yellow))
-    .divider(DOT);
+    
+    fn create_spans(text:Vec<[&str;2]>) -> Spans {
+        let mut spans = vec![];
+        for letters in text.iter() {
+            spans.append(&mut vec![
+                Span::styled(letters[0], Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
+                Span::styled(letters[1], Style::default()),
+            ]);
+            if text.iter().last().unwrap() == letters {
+                continue;
+            }
+            spans.append(&mut vec![
+                Span::styled(" | ", Style::default()),
+            ])
+        }
+        
+        Spans::from(spans)
+    }
+    
+    let footer = vec![
+        ["q", "uit"],
+        ["c", "onfig"],
+        ["f", "ullscreen"],
+    ];
+    
+    let text = create_spans(footer);
+    
+    
+    let footer = tui::widgets::Paragraph::new(text).block(commands_block);
+// widgets::Paragrapha
+
+    // let titles:Vec<Spans> = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Spans::from).collect();
+    
+    // let tabthings = Tabs::new(titles)
+    // .block(Block::default().title("Tabs").borders(Borders::ALL))
+    // .style(Style::default().fg(Color::White))
+    // .highlight_style(Style::default().fg(Color::Yellow))
+    // .divider(DOT);
     
     // f.render_widget(block_1, layouts.settings[0]);
     // f.render_widget(block_2, layouts.settings[1]);
@@ -49,11 +105,12 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     // f.render_widget(block_4, layouts.settings[3]);
     // 
     // f.render_widget(tabthings, layouts.menu[0]);
-    f.render_widget(block_1, root_container.header);
     f.render_widget(block_2, layouts.title);
     f.render_widget(menu_block, layouts.salat);
-    f.render_widget(block_3, root_container.center);
-    f.render_widget(block_4, root_container.footer);
+    if app_state.fullscreen {return;}
+    f.render_widget(header, root_container.header);
+    f.render_widget(footer, root_container.footer);
+    // f.render_widget(block_3, root_container.center);
 }
 
 pub struct SettingsContainer {
@@ -63,16 +120,7 @@ pub struct MainContainer {
     title: Rect,
     salat: Rect,
 }
-pub struct HeaderContainer {
 
-}
-pub struct FooterContainer {
-
-}
-pub enum CenterContainer{
-    Main(MainContainer),
-    Settings(SettingsContainer),
-}
 #[derive(Debug, Default)]
 pub struct RootContainer {
     pub header: Rect,

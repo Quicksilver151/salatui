@@ -123,6 +123,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
     terminal.draw(|f| ui(f, app_state))?;
     loop {
         app_state.input_map.reset();
+        app_state.input_char = char::default();
         if let Key(key) = event::read()? {
             match key.code {
                 KeyCode::Right | KeyCode::Enter => app_state.input_map.enter = true,
@@ -137,7 +138,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
             
         }
         // dbg!(&input_map);
-        if app_state.input_char=='q'{return Ok(())};
+        if app_state.input_char == 'f' { app_state.fullscreen = !app_state.fullscreen };
+        if app_state.input_char == 'q' { return Ok(()) };
         terminal.draw(|f| ui(f, app_state))?;
     }
 }

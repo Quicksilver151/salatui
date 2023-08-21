@@ -17,6 +17,7 @@ pub struct UI {
 #[derive(Debug, Default)]
 pub struct AppState {
     pub ui: UI,
+    pub fullscreen: bool,
     pub prayertime: PrayerTime,
     pub input_map: InputMap,
     pub input_char: char,
