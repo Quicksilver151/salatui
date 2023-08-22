@@ -5,6 +5,7 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
+use tui::layout::{Alignment, Corner};
 pub use tui::{
     layout::{Layout, Direction, Constraint, Rect},
     text::Span,
@@ -29,36 +30,6 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
             .borders(Borders::NONE);
         block
     }
-    let root_container:RootContainer = RootContainer::new(f);
-    let layouts = if app_state.fullscreen {
-        MainContainer::from(f.size())
-    } else {
-        MainContainer::from(root_container.center)
-    };
-    
-    let title = input_map.get_current().unwrap_or(String::new());
-    let menu_block = new_block(&title);
-    let header = new_block("info");
-    let block_2 = new_block("");
-    let block_3 = new_block("main");
-    let commands_block: Block = new_block("commands");
-    
-    // let text = vec![
-    //     Spans::from(vec![
-    //                 Span::styled("q", Style::default().add_modifier(Modifier::BOLD).fg(Color::Blue)),
-    //                 Span::styled("uit", Style::default()),
-    //                 
-    //                 Span::styled(" | ", Style::default()),
-    //                 
-    //                 Span::styled("c", Style::default().add_modifier(Modifier::BOLD).fg(Color::Blue)),
-    //                 Span::styled("onfig", Style::default()),
-    //                 
-    //                 Span::styled(" | ", Style::default()),
-    //                 
-    //                 Span::styled("f", Style::default().add_modifier(Modifier::BOLD).fg(Color::Blue)),
-    //                 Span::styled("fullscreen", Style::default()),
-    //     ])
-    // ];
     
     
     fn create_spans(text:Vec<[&str;2]>) -> Spans {
@@ -79,6 +50,23 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         Spans::from(spans)
     }
     
+    
+    let root_container:RootContainer = RootContainer::new(f);
+    let layouts = if app_state.fullscreen {
+        MainContainer::from(f.size())
+    } else {
+        MainContainer::from(root_container.center)
+    };
+    
+    let title = input_map.get_current().unwrap_or(String::new());
+    let menu_block = new_block(&title);
+    let header = new_block("info");
+    let block_2 = new_block("");
+    let block_3 = new_block("main");
+    let commands_block: Block = new_block("commands");
+    
+    
+    
     let footer = vec![
         ["q", "uit"],
         ["c", "onfig"],
@@ -86,11 +74,23 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     ];
     
     let text = create_spans(footer);
+    let menu_list = tui::widgets::List::new(vec![
+        ListItem::new("Fajr"),
+        ListItem::new("Sun"),
+        ListItem::new("Dhuhur"),
+        ListItem::new("Asr"),
+        ListItem::new("Magrib"),
+        ListItem::new("Isha"),
+    ])
+        .block(menu_block)
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        .highlight_symbol("> ")
+        .style(Style::default());
     
-    
+    ListState::default().select(Some(1));
     let footer = tui::widgets::Paragraph::new(text).block(commands_block);
-// widgets::Paragrapha
-
+    // widgets::Paragrapha
+    
     // let titles:Vec<Spans> = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Spans::from).collect();
     
     // let tabthings = Tabs::new(titles)
@@ -105,8 +105,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     // f.render_widget(block_4, layouts.settings[3]);
     // 
     // f.render_widget(tabthings, layouts.menu[0]);
+
     f.render_widget(block_2, layouts.title);
-    f.render_widget(menu_block, layouts.salat);
+    f.render_widget(menu_list, layouts.salat);
     if app_state.fullscreen {return;}
     f.render_widget(header, root_container.header);
     f.render_widget(footer, root_container.footer);
