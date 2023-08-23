@@ -82,6 +82,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Config::default()
         }
     };
+    let timeset_data: TimeSetData = match &config.provider {
+        Provider::Data(name) => TimeSetData::load(name).unwrap(),
+        _ => todo!(),
+    };
     
     if args.output {
         output_data(&mut config);
@@ -98,7 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let mut app_state: AppState = AppState::default();
+    let mut app_state: AppState = AppState{config, timeset_data, ..Default::default()};
     
     // main
     let result = run_app(&mut terminal, &mut app_state);

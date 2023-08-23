@@ -21,6 +21,8 @@ pub struct AppState {
     pub prayertime: PrayerTime,
     pub input_map: InputMap,
     pub input_char: char,
+    pub config: Config,
+    pub timeset_data: TimeSetData,
 }
 
 use serde::*;
@@ -83,10 +85,10 @@ impl PrayerTime {
         
         match config.display.format {
             TimeFormat::Twelve => {
-                return time_list.iter().map(to_time).map(|t| format!("{: >2}:{:0>2} {}",{if t.0 >13{t.0%12}else{t.0}},t.1, {if t.0 > 11{"PM"} else{"AM"} })).collect();
+                return time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2} {}",{if t.0 >13{t.0%12}else{t.0}},t.1, {if t.0 > 11{"PM"} else{"AM"} })).collect();
             },
             TimeFormat::TwentyFour => {
-                return time_list.iter().map(to_time).map(|t| format!("{: >2}:{:0>2}",t.0,t.1)).collect();
+                return time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2}",t.0,t.1)).collect();
             },
             TimeFormat::Minutes => {
                 return time_list.iter().map(|t| format!("{}",t)).collect();

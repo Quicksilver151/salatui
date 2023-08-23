@@ -60,7 +60,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     
     let title = input_map.get_current().unwrap_or(String::new());
     let menu_block = new_block(&title);
-    let header = new_block("info");
+    let header = new_block("");
     let block_2 = new_block("");
     let block_3 = new_block("main");
     let commands_block: Block = new_block("commands");
@@ -72,15 +72,17 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         ["c", "onfig"],
         ["f", "ullscreen"],
     ];
+    let prayertime = app_state.timeset_data.today_data();
+    let prayer_times = prayertime.format_time(&app_state.config);
     
     let text = create_spans(footer);
     let menu_list = tui::widgets::List::new(vec![
-        ListItem::new("Fajr"),
-        ListItem::new("Sun"),
-        ListItem::new("Dhuhur"),
-        ListItem::new("Asr"),
-        ListItem::new("Magrib"),
-        ListItem::new("Isha"),
+        ListItem::new(format!("Fajr:   {}", prayer_times[0])),
+        ListItem::new(format!("Sun:    {}", prayer_times[1])),
+        ListItem::new(format!("Dhuhur: {}", prayer_times[2])),
+        ListItem::new(format!("Asr:    {}", prayer_times[3])),
+        ListItem::new(format!("Magrib: {}", prayer_times[4])),
+        ListItem::new(format!("Isha:   {}", prayer_times[5])),
     ])
         .block(menu_block)
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
@@ -134,7 +136,7 @@ impl RootContainer {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Min(16),
+            Constraint::Min(12),
             Constraint::Length(3),
         ]).split(f.size());
         
