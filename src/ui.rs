@@ -77,12 +77,12 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     
     let text = create_spans(footer);
     let menu_list = tui::widgets::List::new(vec![
-        ListItem::new(format!("Fajr:   {}", prayer_times[0])),
-        ListItem::new(format!("Sun:    {}", prayer_times[1])),
-        ListItem::new(format!("Dhuhur: {}", prayer_times[2])),
-        ListItem::new(format!("Asr:    {}", prayer_times[3])),
-        ListItem::new(format!("Magrib: {}", prayer_times[4])),
-        ListItem::new(format!("Isha:   {}", prayer_times[5])),
+        ListItem::new(format!("Fajr:   {}", prayer_times[0])).style(Style::default().add_modifier(Modifier::BOLD)),
+        ListItem::new(format!("Sun:    {}", prayer_times[1])).style(Style::default().add_modifier(Modifier::BOLD)),
+        ListItem::new(format!("Dhuhur: {}", prayer_times[2])).style(Style::default().add_modifier(Modifier::BOLD)),
+        ListItem::new(format!("Asr:    {}", prayer_times[3])).style(Style::default().add_modifier(Modifier::BOLD)),
+        ListItem::new(format!("Magrib: {}", prayer_times[4])).style(Style::default().add_modifier(Modifier::BOLD)),
+        ListItem::new(format!("Isha:   {}", prayer_times[5])).style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::REVERSED)),
     ])
         .block(menu_block)
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
