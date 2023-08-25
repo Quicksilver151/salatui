@@ -25,6 +25,13 @@ impl Default for Provider {
 // [Display] ===================================
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+pub enum UIMode {
+    #[default]
+    Normal,
+    Fancy,
+    Text,
+}
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub enum TimeFormat {
     #[default]
     Twelve,
@@ -41,10 +48,11 @@ pub enum TimeIndicator {
 }
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Display {
-    pub show_raw_output: bool,
+    pub ui_mode: UIMode,
     pub format: TimeFormat,
-    pub seconds: bool,
     pub indicator: TimeIndicator,
+    pub show_raw_output: bool,
+    pub seconds: bool,
     pub location: bool,
     pub coordinates: bool,
 }
