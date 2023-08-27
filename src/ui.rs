@@ -75,20 +75,23 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let prayertime = app_state.timeset_data.today_data();
     let prayer_times = prayertime.format_time(&app_state.config);
     
+    
     let text = create_spans(footer);
+    let current_time_index = prayertime.get_current_index();
+    // let current_time_index = 5;
+    
     let menu_list = tui::widgets::List::new(vec![
         ListItem::new(format!("Fajr:   {}", prayer_times[0])).style(Style::default().add_modifier(Modifier::BOLD)),
         ListItem::new(format!("Sun:    {}", prayer_times[1])).style(Style::default().add_modifier(Modifier::BOLD)),
         ListItem::new(format!("Dhuhur: {}", prayer_times[2])).style(Style::default().add_modifier(Modifier::BOLD)),
         ListItem::new(format!("Asr:    {}", prayer_times[3])).style(Style::default().add_modifier(Modifier::BOLD)),
         ListItem::new(format!("Magrib: {}", prayer_times[4])).style(Style::default().add_modifier(Modifier::BOLD)),
-        ListItem::new(format!("Isha:   {}", prayer_times[5])).style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::REVERSED)),
-    ])
+        ListItem::new(format!("Isha:   {}", prayer_times[5])).style(Style::default().add_modifier(Modifier::BOLD)),
+    ].into_iter().enumerate().map(|(i, item)|if current_time_index == i {item.style(Style::default().add_modifier(Modifier::REVERSED))}else{item}).collect::<Vec<ListItem>>())
         .block(menu_block)
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ")
         .style(Style::default());
-    
     ListState::default().select(Some(1));
     let footer = tui::widgets::Paragraph::new(text).block(commands_block);
     // widgets::Paragrapha
