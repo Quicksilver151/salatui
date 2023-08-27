@@ -24,10 +24,10 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
             .border_type(BorderType::Plain);
         block
     }
-    fn new_block_no_outline(title: &str) -> Block {
+    fn new_block_top_outline(title: &str) -> Block {
         let block = Block::default()
             .title(title)
-            .borders(Borders::NONE);
+            .borders(Borders::TOP);
         block
     }
     
@@ -61,17 +61,18 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let title = input_map.get_current().unwrap_or(String::new());
     let menu_block = new_block(&title);
     let header = new_block("header");
-    let block_2 = new_block("");
+    let title_block = new_block_top_outline("SALATUI").title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
     let block_3 = new_block("main");
     let commands_block: Block = new_block("commands");
     
-    
+    let title_widget = Paragraph::new(Span::styled("Salatui", Style::default().add_modifier(Modifier::REVERSED))).block(title_block);
     
     let footer = vec![
         ["q", "uit"],
         ["c", "onfig"],
         ["f", "ullscreen"],
     ];
+    
     let prayer_times = app_state.timeset_data.today_data();
     let salat_index = prayer_times.get_current_index();
     let prayer_times = prayer_times.format_time(&app_state.config);
@@ -124,7 +125,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     // 
     // f.render_widget(tabthings, layouts.menu[0]);
 
-    f.render_widget(block_2, layouts.title);
+    f.render_widget(title_widget, layouts.title);
     f.render_widget(menu_widget, layouts.salat);
     if app_state.fullscreen {return;}
     f.render_widget(header, root_container.header);
@@ -168,7 +169,7 @@ impl MainContainer {
         let layouts = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(1),
             Constraint::Min(8),
         ]).split(area);
         
