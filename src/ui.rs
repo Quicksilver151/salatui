@@ -5,7 +5,7 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
-use tui::layout::{Alignment, Corner};
+use tui::{layout::{Alignment, Corner}, widgets};
 pub use tui::{
     layout::{Layout, Direction, Constraint, Rect},
     text::Span,
@@ -60,7 +60,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     
     let title = input_map.get_current().unwrap_or(String::new());
     let menu_block = new_block(&title);
-    let header = new_block("");
+    let header = new_block("header");
     let block_2 = new_block("");
     let block_3 = new_block("main");
     let commands_block: Block = new_block("commands");
@@ -72,27 +72,40 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         ["c", "onfig"],
         ["f", "ullscreen"],
     ];
-    let prayertime = app_state.timeset_data.today_data();
-    let prayer_times = prayertime.format_time(&app_state.config);
+    let prayer_times = app_state.timeset_data.today_data();
+    let salat_index = prayer_times.get_current_index();
+    let prayer_times = prayer_times.format_time(&app_state.config);
     
     
     let text = create_spans(footer);
-    let current_time_index = prayertime.get_current_index();
-    // let current_time_index = 5;
+    // let salat_index = 5;
+    let menu_list = vec![
+        ListItem::new(format!("Fajr:   {}", prayer_times[0])),
+        ListItem::new(format!("Sun:    {}", prayer_times[1])),
+        ListItem::new(format!("Dhuhur: {}", prayer_times[2])),
+        ListItem::new(format!("Asr:    {}", prayer_times[3])),
+        ListItem::new(format!("Magrib: {}", prayer_times[4])),
+        ListItem::new(format!("Isha:   {}", prayer_times[5])),
+    ]
+        .into_iter()
+        .enumerate()
+        .map(|(i, item)|
+            if salat_index == i { 
+                item.style(Style::default().add_modifier(Modifier::REVERSED))
+            } else {
+                 item.style(Style::default())
+            }
+        )
+        .collect::<Vec<ListItem>>();
+
     
-    let menu_list = tui::widgets::List::new(vec![
-        ListItem::new(format!("Fajr:   {}", prayer_times[0])).style(Style::default().add_modifier(Modifier::BOLD)),
-        ListItem::new(format!("Sun:    {}", prayer_times[1])).style(Style::default().add_modifier(Modifier::BOLD)),
-        ListItem::new(format!("Dhuhur: {}", prayer_times[2])).style(Style::default().add_modifier(Modifier::BOLD)),
-        ListItem::new(format!("Asr:    {}", prayer_times[3])).style(Style::default().add_modifier(Modifier::BOLD)),
-        ListItem::new(format!("Magrib: {}", prayer_times[4])).style(Style::default().add_modifier(Modifier::BOLD)),
-        ListItem::new(format!("Isha:   {}", prayer_times[5])).style(Style::default().add_modifier(Modifier::BOLD)),
-    ].into_iter().enumerate().map(|(i, item)|if current_time_index == i {item.style(Style::default().add_modifier(Modifier::REVERSED))}else{item}).collect::<Vec<ListItem>>())
+    let menu_widget = tui::widgets::List::new(menu_list)
         .block(menu_block)
-        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
-        .highlight_symbol("> ")
-        .style(Style::default());
-    ListState::default().select(Some(1));
+        // .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        // .highlight_symbol("> ")
+        .style(Style::default().add_modifier(Modifier::BOLD));
+    
+    // ListState::default().select(Some(1));
     let footer = tui::widgets::Paragraph::new(text).block(commands_block);
     // widgets::Paragrapha
     
@@ -112,7 +125,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     // f.render_widget(tabthings, layouts.menu[0]);
 
     f.render_widget(block_2, layouts.title);
-    f.render_widget(menu_list, layouts.salat);
+    f.render_widget(menu_widget, layouts.salat);
     if app_state.fullscreen {return;}
     f.render_widget(header, root_container.header);
     f.render_widget(footer, root_container.footer);
@@ -139,7 +152,7 @@ impl RootContainer {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Min(12),
+            Constraint::Min(8),
             Constraint::Length(3),
         ]).split(f.size());
         
@@ -156,7 +169,7 @@ impl MainContainer {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Min(16),
+            Constraint::Min(8),
         ]).split(area);
         
         let salat = layouts[1];

@@ -130,8 +130,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         app_state.input_char = char::default();
         if let Key(key) = event::read()? {
             match key.code {
-                KeyCode::Right | KeyCode::Enter => app_state.input_map.enter = true,
-                KeyCode::Left  | KeyCode::Esc  | KeyCode::Backspace => app_state.input_map.back  = true,
+                KeyCode::Right => app_state.input_map.forward = true,
+                KeyCode::Left  => app_state.input_map.backward  = true,
+                
+                KeyCode::Enter => app_state.input_map.enter = true,
+                KeyCode::Backspace | KeyCode::Esc => app_state.input_map.escape = true,
                 
                 KeyCode::Up   | KeyCode::BackTab => app_state.input_map.up   = true,
                 KeyCode::Down | KeyCode::Tab     => app_state.input_map.down = true,

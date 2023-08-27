@@ -20,6 +20,6 @@ pub fn get_settings_layout<B: Backend>(f: &mut Frame<B>, container_size: Vec<f64
             Constraint::Percentage(containers[2]),
             Constraint::Percentage(containers[3]),
         ].as_ref()
-    ).split(f.size())
+    ).split(f.size()).to_vec()
 }
 
