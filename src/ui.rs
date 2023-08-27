@@ -58,14 +58,16 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         MainContainer::from(root_container.center)
     };
     
-    let title = input_map.get_current().unwrap_or(String::new());
-    let menu_block = new_block(&title);
+    // let title = input_map.get_current().unwrap_or(String::new());
     let header = new_block("header");
-    let title_block = new_block_top_outline("SALATUI").title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
-    let block_3 = new_block("main");
+    
+    let current_time = chrono::offset::Local::now().time();
+    let title_block = new_block("salatui").title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
+    let menu_block = new_block("");
     let commands_block: Block = new_block("commands");
     
-    let title_widget = Paragraph::new(Span::styled("Salatui", Style::default().add_modifier(Modifier::REVERSED))).block(title_block);
+    let title_text = format!("Current Time: {}", current_time);
+    let title_widget = Paragraph::new(Span::styled(title_text, Style::default().add_modifier(Modifier::BOLD))).block(title_block);
     
     let footer = vec![
         ["q", "uit"],
@@ -98,7 +100,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
             }
         )
         .collect::<Vec<ListItem>>();
-
+    
     
     let menu_widget = tui::widgets::List::new(menu_list)
         .block(menu_block)
@@ -169,7 +171,7 @@ impl MainContainer {
         let layouts = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1),
+            Constraint::Length(3),
             Constraint::Min(8),
         ]).split(area);
         
