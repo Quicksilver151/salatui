@@ -5,7 +5,7 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
-use tui::{layout::{Alignment, Corner}, widgets};
+use tui::{layout::Alignment};
 pub use tui::{
     layout::{Layout, Direction, Constraint, Rect},
     text::Span,
@@ -15,7 +15,7 @@ pub use tui::{
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     
-    let input_map = app_state.input_map.to_owned();
+    // let input_map = app_state.input_map.to_owned();
     
     fn new_block(title: &str) -> Block {
         let block = Block::default()
@@ -32,7 +32,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     }
     
     
-    fn create_spans(text:Vec<[&str;2]>) -> Spans {
+    fn create_spans(text:Vec<[&str;2]>) -> Line {
         let mut spans = vec![];
         for letters in text.iter() {
             spans.append(&mut vec![
@@ -47,7 +47,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
             ])
         }
         
-        Spans::from(spans)
+        Line::from(spans)
     }
     
     
@@ -66,7 +66,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let menu_block = new_block("");
     let commands_block: Block = new_block("commands");
     
-    let title_text = format!("Current Time: {}", current_time.format("%-I:%M:%S %p"));
+    let title_text = format!("Time: {}", current_time.format("%-I:%M:%S %p"));
     let title_widget = Paragraph::new(Span::styled(title_text, Style::default().add_modifier(Modifier::BOLD))).block(title_block);
     
     let footer = vec![
@@ -112,7 +112,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let footer = tui::widgets::Paragraph::new(text).block(commands_block);
     // widgets::Paragrapha
     
-    // let titles:Vec<Spans> = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Spans::from).collect();
+    // let titles:Vec<Line> = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Line::from).collect();
     
     // let tabthings = Tabs::new(titles)
     // .block(Block::default().title("Tabs").borders(Borders::ALL))
@@ -126,7 +126,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     // f.render_widget(block_4, layouts.settings[3]);
     // 
     // f.render_widget(tabthings, layouts.menu[0]);
-
+    
     f.render_widget(title_widget, layouts.title);
     f.render_widget(menu_widget, layouts.salat);
     if app_state.fullscreen {return;}
@@ -155,7 +155,7 @@ impl RootContainer {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Min(8),
+            Constraint::Min(11),
             Constraint::Length(3),
         ]).split(f.size());
         

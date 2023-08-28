@@ -10,11 +10,12 @@ pub use clap::Parser;
 pub use tui::{
     Terminal,
     Frame,
-    text::Spans,
+    backend::{CrosstermBackend, Backend},
+    layout::Alignment,
     style::{Color, Style},
     symbols::*,
+    text::Line,
     widgets::{Block, Borders, BorderType, List, ListItem, ListState, Paragraph, Tabs},
-    backend::{CrosstermBackend, Backend},
 };
 
 pub use serde::{Serialize, Deserialize};
