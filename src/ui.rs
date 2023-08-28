@@ -66,7 +66,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let menu_block = new_block("");
     let commands_block: Block = new_block("commands");
     
-    let title_text = format!("Current Time: {}", current_time);
+    let title_text = format!("Current Time: {}", current_time.format("%-I:%M:%S %p"));
     let title_widget = Paragraph::new(Span::styled(title_text, Style::default().add_modifier(Modifier::BOLD))).block(title_block);
     
     let footer = vec![

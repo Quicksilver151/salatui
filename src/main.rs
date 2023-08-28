@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 // crates
 pub use crossterm::{event, execute, terminal};
 
@@ -128,22 +130,27 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
     loop {
         app_state.input_map.reset();
         app_state.input_char = char::default();
-        if let Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Right => app_state.input_map.forward = true,
-                KeyCode::Left  => app_state.input_map.backward  = true,
-                
-                KeyCode::Enter => app_state.input_map.enter = true,
-                KeyCode::Backspace | KeyCode::Esc => app_state.input_map.escape = true,
-                
-                KeyCode::Up   | KeyCode::BackTab => app_state.input_map.up   = true,
-                KeyCode::Down | KeyCode::Tab     => app_state.input_map.down = true,
-                
-                KeyCode::Char(x) => app_state.input_char = x,
-                _ => {}
+        if event::poll(Duration::from_secs(1))? {
+            if let Key(key) = event::read()? {                                                 
+                match key.code {
+                    KeyCode::Right => app_state.input_map.forward = true,
+                    KeyCode::Left  => app_state.input_map.backward  = true,
+                    
+                    KeyCode::Enter => app_state.input_map.enter = true,
+                    KeyCode::Backspace | KeyCode::Esc => app_state.input_map.escape = true,
+                    
+                    KeyCode::Up   | KeyCode::BackTab => app_state.input_map.up   = true,
+                    KeyCode::Down | KeyCode::Tab     => app_state.input_map.down = true,
+                    
+                    KeyCode::Char(x) => app_state.input_char = x,
+                    _ => {}
+                }
             }
-            
+        } else {
+        
         }
+            
+        
         // dbg!(&input_map);
         if app_state.input_char == 'f' { app_state.fullscreen = !app_state.fullscreen };
         if app_state.input_char == 'q' { return Ok(()) };
