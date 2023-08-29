@@ -5,7 +5,7 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
-use tui::{layout::Alignment};
+use tui::{layout::Alignment, text::Spans};
 pub use tui::{
     layout::{Layout, Direction, Constraint, Rect},
     text::Span,
@@ -62,12 +62,21 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let header = new_block("header");
     
     let current_time = chrono::offset::Local::now().time();
+    let current_date = chrono::offset::Local::now().date_naive();
     let title_block = new_block("salatui").title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
     let menu_block = new_block("");
     let commands_block: Block = new_block("commands");
     
-    let title_text = format!("Time: {}", current_time.format("%-I:%M:%S %p"));
-    let title_widget = Paragraph::new(Span::styled(title_text, Style::default().add_modifier(Modifier::BOLD))).block(title_block);
+    let title_text: Vec<Line> = vec![
+        Line::from(vec![
+            Span::styled(format!("Time: {}", current_time.format("%-I:%M:%S %p")), Style::default().add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(vec![
+            Span::styled(format!("Date: {}", current_date.format("%-d %B %Y")), Style::default().add_modifier(Modifier::BOLD)),
+        ])
+    ];
+    
+    let title_widget = Paragraph::new(title_text).block(title_block);
     
     let footer = vec![
         ["q", "uit"],
@@ -155,7 +164,7 @@ impl RootContainer {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Min(11),
+            Constraint::Min(12),
             Constraint::Length(3),
         ]).split(f.size());
         
@@ -171,7 +180,7 @@ impl MainContainer {
         let layouts = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Min(8),
         ]).split(area);
         
