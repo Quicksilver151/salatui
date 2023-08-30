@@ -69,10 +69,10 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     
     let title_text: Vec<Line> = vec![
         Line::from(vec![
-            Span::styled(format!("Time: {}", current_time.format("%-I:%M:%S %p")), Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(format!("Time: {}", current_time.format("%I:%M:%S %p")), Style::default().add_modifier(Modifier::BOLD)),
         ]),
         Line::from(vec![
-            Span::styled(format!("Date: {}", current_date.format("%-d %B %Y")), Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(format!("Date: {}", current_date.format("%-d %b %Y")), Style::default().add_modifier(Modifier::BOLD)),
         ])
     ];
     

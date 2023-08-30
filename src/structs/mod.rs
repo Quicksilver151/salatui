@@ -176,17 +176,17 @@ fn test_format() {
     let mut config = Config::default();
     
     config.display.format = TimeFormat::Twelve;
-    let expected:Vec<String> = vec!["77", "225", " 4:53 AM", " 6:05 AM", "12:16 PM", " 3:32 PM", " 6:18 PM", " 7:31 PM"]
+    let expected:Vec<String> = vec!["77", "225", "04:53 AM", "06:05 AM", "12:16 PM", "03:32 PM", "06:18 PM", "07:31 PM"]
         .into_iter().map(|x|x.to_owned()).collect();
     let result = value.format(&config);
     
     config.display.format = TimeFormat::TwentyFour;
-    let expected2:Vec<String> = vec!["77", "225", " 4:53", " 6:05", "12:16", "15:32", "18:18", "19:31"]
+    let expected2:Vec<String> = vec!["77", "225", "04:53", "06:05", "12:16", "15:32", "18:18", "19:31"]
         .into_iter().map(|x|x.to_owned()).collect();
     let result2 = value.format(&config);
 
-    assert_eq!(result , expected );
-    assert_eq!(result2, expected2);
+    assert_eq!(expected, result);
+    assert_eq!(expected2,result2);
 }
 
 #[test]
