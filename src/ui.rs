@@ -24,6 +24,13 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
             .border_type(BorderType::Plain);
         block
     }
+    fn new_color_block(title: &str, color: Color) -> Block {
+        let block = Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain).border_style(Style::default().fg(color));
+        block
+    }
     fn new_block_top_outline(title: &str) -> Block {
         let block = Block::default()
             .title(title)
@@ -59,13 +66,13 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     };
     
     // let title = input_map.get_current().unwrap_or(String::new());
-    let header = new_block("header");
+    let header = new_color_block("header", Color::DarkGray);
     
     let current_time = chrono::offset::Local::now().time();
     let current_date = chrono::offset::Local::now().date_naive();
-    let title_block = new_block("salatui").title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
-    let menu_block = new_block("");
-    let commands_block: Block = new_block("commands");
+    let title_block = new_color_block("salatui", Color::Green).title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
+    let menu_block = new_color_block("", Color::Green);
+    let commands_block: Block = new_color_block("commands",Color::DarkGray);
     
     let title_text: Vec<Line> = vec![
         Line::from(vec![
@@ -92,12 +99,12 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let text = create_spans(footer);
     // let salat_index = 5;
     let menu_list = vec![
-        ListItem::new(format!("Fajr:   {}", prayer_times[0])),
-        ListItem::new(format!("Sun:    {}", prayer_times[1])),
-        ListItem::new(format!("Dhuhur: {}", prayer_times[2])),
-        ListItem::new(format!("Asr:    {}", prayer_times[3])),
-        ListItem::new(format!("Magrib: {}", prayer_times[4])),
-        ListItem::new(format!("Isha:   {}", prayer_times[5])),
+        ListItem::new(format!("Fajr   : {}", prayer_times[0])),
+        ListItem::new(format!("Sun    : {}", prayer_times[1])),
+        ListItem::new(format!("Dhuhur : {}", prayer_times[2])),
+        ListItem::new(format!("Asr    : {}", prayer_times[3])),
+        ListItem::new(format!("Magrib : {}", prayer_times[4])),
+        ListItem::new(format!("Isha   : {}", prayer_times[5])),
     ]
         .into_iter()
         .enumerate()
