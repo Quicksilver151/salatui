@@ -117,7 +117,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         .into_iter()
         .enumerate()
         .map(|(i, item)|
-            if salat_index == i { 
+            if salat_index == i && app_state.day_offset == 0{ 
                 item.style(Style::default().add_modifier(Modifier::REVERSED))
             } else {
                  item.style(Style::default())
