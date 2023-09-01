@@ -95,6 +95,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         ["q", "uit"],
         ["c", "onfig"],
         ["f", "ullscreen"],
+        ["esc", "ape"],
     ];
     
     
