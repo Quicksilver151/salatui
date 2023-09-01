@@ -134,11 +134,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         if event::poll(Duration::from_secs(1))? {
             if let Key(key) = event::read()? {                                                 
                 match key.code {
-                    KeyCode::Right => app_state.input_map.forward = true,
-                    KeyCode::Left  => app_state.input_map.backward  = true,
+                    KeyCode::Right => {app_state.input_map.forward  = true; app_state.day_offset += 1},
+                    KeyCode::Left  => {app_state.input_map.backward = true; app_state.day_offset -= 1},
                     
                     KeyCode::Enter => app_state.input_map.enter = true,
-                    KeyCode::Backspace | KeyCode::Esc => app_state.input_map.escape = true,
+                    KeyCode::Backspace | KeyCode::Esc => {app_state.input_map.escape = true; app_state.day_offset = 0},
                     
                     KeyCode::Up   | KeyCode::BackTab => app_state.input_map.up   = true,
                     KeyCode::Down | KeyCode::Tab     => app_state.input_map.down = true,

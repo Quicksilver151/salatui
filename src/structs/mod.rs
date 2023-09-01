@@ -23,6 +23,7 @@ pub struct AppState {
     pub input_char: char,
     pub config: Config,
     pub timeset_data: TimeSetData,
+    pub day_offset: i64,
 }
 
 use serde::*;

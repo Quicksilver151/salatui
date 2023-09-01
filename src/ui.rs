@@ -69,8 +69,14 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     let header = new_color_block("header", Color::DarkGray);
     
     let current_time = chrono::offset::Local::now().time();
-    let current_date = chrono::offset::Local::now().date_naive();
-    let title_block = new_color_block("salatui", Color::Green).title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD));
+    let current_date = chrono::offset::Local::now().date_naive() + chrono::Duration::days(app_state.day_offset);
+    
+    let title_block = if app_state.day_offset == 0 {
+        new_color_block("salatui", Color::Green).title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD))
+    }else{
+        new_color_block("salatui", Color::Red).title_alignment(Alignment::Center).style(Style::default().add_modifier(Modifier::BOLD))
+    };
+
     let menu_block = new_color_block("", Color::Green);
     let commands_block: Block = new_color_block("commands",Color::DarkGray);
     
@@ -91,7 +97,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
         ["f", "ullscreen"],
     ];
     
-    let prayer_times = app_state.timeset_data.today_data();
+    
+    let prayer_times = app_state.timeset_data.data_from_day(current_date.ordinal() as usize);
+    
     let salat_index = prayer_times.get_current_index();
     let prayer_times = prayer_times.format_time(&app_state.config);
     
