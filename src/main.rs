@@ -3,7 +3,7 @@ use std::time::Duration;
 // crates
 pub use crossterm::{event, execute, terminal};
 
-pub use event::{KeyCode, EnableMouseCapture, DisableMouseCapture, Event::Key};
+pub use event::{KeyCode, EnableMouseCapture, DisableMouseCapture, Event};
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 // pub use arboard::*;
 pub use clap::Parser;
@@ -129,32 +129,51 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
     
     terminal.draw(|f| ui(f, app_state))?;
     loop {
+        // InputMap
         app_state.input_map.reset();
         app_state.input_char = char::default();
-        if event::poll(Duration::from_secs(1))? {
-            if let Key(key) = event::read()? {                                                 
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                use input::*;
                 match key.code {
-                    KeyCode::Right => {app_state.input_map.forward  = true; app_state.day_offset += 1},
-                    KeyCode::Left  => {app_state.input_map.backward = true; app_state.day_offset -= 1},
+                    KeyCode::Right => app_state.input_map.set_input(Key::Right), //app_state.day_offset += 1},
+                    KeyCode::Left  => app_state.input_map.set_input(Key::Left), //app_state.day_offset -= 1},
                     
-                    KeyCode::Enter => app_state.input_map.enter = true,
-                    KeyCode::Backspace | KeyCode::Esc => {app_state.input_map.escape = true; app_state.day_offset = 0},
+                    KeyCode::Enter => app_state.input_map.set_input(Key::Enter),
+                    KeyCode::Backspace | KeyCode::Esc => app_state.input_map.set_input(Key::Escape),//app_state.day_offset = 0,
                     
-                    KeyCode::Up   | KeyCode::BackTab => app_state.input_map.up   = true,
-                    KeyCode::Down | KeyCode::Tab     => app_state.input_map.down = true,
+                    KeyCode::Up   | KeyCode::BackTab => app_state.input_map.set_input(Key::Up),
+                    KeyCode::Down | KeyCode::Tab     => app_state.input_map.set_input(Key::Down),
                     
-                    KeyCode::Char(x) => app_state.input_char = x,
+                    KeyCode::Char(x) => app_state.input_map.set_input(Key::Command(x)),
                     _ => {}
                 }
             }
-        } else {
-        
         }
-            
-        
         // dbg!(&input_map);
-        if app_state.input_char == 'f' { app_state.fullscreen = !app_state.fullscreen };
-        if app_state.input_char == 'q' { return Ok(()) };
+        
+        // Logic
+        let command = app_state.input_map.get_command();
+        if let Some(command) = command {
+            match command {
+                'f' => app_state.fullscreen = !app_state.fullscreen,
+                'q' => return Ok(()),
+                 _  => {},
+            };
+        };
+        
+        let key = app_state.input_map.get_key();
+        use input::Key;
+        if let Some(key) = key{
+            match key {
+                Key::Right => app_state.day_offset += 1,
+                Key::Left  => app_state.day_offset -= 1,
+                Key::Escape=> app_state.day_offset =  0,
+                _ => {},
+            };
+        };
+        
+        
         terminal.draw(|f| ui(f, app_state))?;
     }
 }

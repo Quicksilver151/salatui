@@ -3,7 +3,7 @@ pub mod conf;
 pub use conf::*;
 
 pub mod input;
-pub use input::*;
+// pub use input::*;
 
 pub mod data;
 pub use data::*;
@@ -19,7 +19,7 @@ pub struct AppState {
     pub ui: UI,
     pub fullscreen: bool,
     pub prayertime: PrayerTime,
-    pub input_map: InputMap,
+    pub input_map: input::InputMap,
     pub input_char: char,
     pub config: Config,
     pub timeset_data: TimeSetData,

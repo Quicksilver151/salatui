@@ -101,7 +101,11 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &AppState){
     
     let prayer_times = app_state.timeset_data.data_from_day(current_date.ordinal() as usize);
     
-    let salat_index = prayer_times.get_current_index();
+    let salat_index = prayer_times.get_current_index() - match app_state.config.display.indicator{
+        TimeIndicator::Next => 0,
+        TimeIndicator::Current => 1,
+        _ => 0,
+    };
     let prayer_times = prayer_times.format_time(&app_state.config);
     
     
