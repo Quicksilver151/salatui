@@ -132,7 +132,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         // InputMap
         app_state.input_map.reset();
         app_state.input_char = char::default();
-        if event::poll(Duration::from_millis(100))? {
+        if event::poll(Duration::from_millis(1000))? {
             if let Event::Key(key) = event::read()? {
                 use input::*;
                 match key.code {
@@ -158,7 +158,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         }
         // dbg!(&input_map);
         
+        // =====
         // Logic
+        // =====
         let command = app_state.input_map.get_command();
         if let Some(command) = command {
             match command {
