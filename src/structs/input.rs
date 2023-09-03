@@ -13,14 +13,19 @@
 // }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum Modifier {
+    #[default]
+    None,
     Shift,
     Alt,
     Ctrl,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum Key {
+    #[default]
+    None,
+    
     Up,
     Down,
     Left,
@@ -36,8 +41,8 @@ pub enum Key {
 }
 #[derive(Debug, Default, Clone)]
 pub struct InputMap {
-    key: Option<Key>,
-    modifiers: Option<Vec<Modifier>>
+    key: Key,
+    modifier: Modifier
 }
 
 
@@ -47,11 +52,11 @@ impl InputMap {
     }
     
     pub fn set_input(&mut self, key: Key) {
-        self.key = Some(key);
+        self.key = key;
     }
     
     pub fn get_command(&self) -> Option<char> {
-        if let Some(Key::Command(x)) = self.key{
+        if let Key::Command(x) = self.key{
             Some(x)
         }
         else {
@@ -59,8 +64,11 @@ impl InputMap {
         }
     }
     
-    pub fn get_key(&self) -> Option<Key> {
-        self.key
+    pub fn get_key(&self) -> Option<(Key, Modifier)> {
+        Some((self.key, self.modifier))
+    }
+    pub fn set_modifier(&mut self, modifier: Modifier) {
+        self.modifier = modifier;
     }
     
 }

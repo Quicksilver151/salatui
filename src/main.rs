@@ -3,7 +3,7 @@ use std::time::Duration;
 // crates
 pub use crossterm::{event, execute, terminal};
 
-pub use event::{KeyCode, EnableMouseCapture, DisableMouseCapture, Event};
+pub use event::{KeyCode, KeyModifiers, EnableMouseCapture, DisableMouseCapture, Event};
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 // pub use arboard::*;
 pub use clap::Parser;
@@ -148,6 +148,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
                     KeyCode::Char(x) => app_state.input_map.set_input(Key::Command(x)),
                     _ => {}
                 }
+                match key.modifiers {
+                    KeyModifiers::SHIFT => app_state.input_map.set_modifier(Modifier::Shift),
+                    KeyModifiers::CONTROL => app_state.input_map.set_modifier(Modifier::Ctrl),
+                    KeyModifiers::ALT => app_state.input_map.set_modifier(Modifier::Alt),
+                    _ => {},
+                }
             }
         }
         // dbg!(&input_map);
@@ -162,17 +168,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
             };
         };
         
-        let key = app_state.input_map.get_key();
-        use input::Key;
-        if let Some(key) = key{
-            match key {
-                Key::Right => app_state.day_offset += 1,
-                Key::Left  => app_state.day_offset -= 1,
-                Key::Escape=> app_state.day_offset =  0,
-                _ => {},
-            };
+        if let Some(key) = app_state.input_map.get_key(){
+        use input::{Key, Modifier};
+        match key {
+            (Key::Right, Modifier::Shift) => app_state.day_offset += 30,
+            (Key::Left, Modifier::Shift)  => app_state.day_offset -= 30,
+            (Key::Right, _) => app_state.day_offset += 1,
+            (Key::Left, _)  => app_state.day_offset -= 1,
+            (Key::Escape, _)=> app_state.day_offset =  0,
+            _ => {},
         };
-        
+        }
         
         terminal.draw(|f| ui(f, app_state))?;
     }
