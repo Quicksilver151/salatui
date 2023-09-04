@@ -72,10 +72,10 @@ fn output_data(config: &mut Config) {
         
         Provider::Calculation(_) =>{},
     }
-    
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // init config
     Config::init().unwrap();
     let args = Args::parse();
     let mut config = match Config::load(){
@@ -85,6 +85,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Config::default()
         }
     };
+    
+    // init timeset
     let timeset_data: TimeSetData = match &config.provider {
         Provider::Data(name) => TimeSetData::load(name).unwrap(),
         _ => todo!(),
@@ -96,6 +98,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     
+    // init terminal
     enable_raw_mode()?;
     execute!(
         std::io::stdout(),
@@ -103,6 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         EnableMouseCapture
     )?;
     
+    // init tui
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut app_state: AppState = AppState{config, timeset_data, ..Default::default()};
@@ -124,6 +128,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn map_inputs(key: event::KeyEvent, input_map: &mut input::InputMap) {
+    
+    use input::*;
+    match key.code {
+        KeyCode::Right => input_map.set_input(Key::Right), //app_state.day_offset += 1},
+        KeyCode::Left  => input_map.set_input(Key::Left), //app_state.day_offset -= 1},
+        KeyCode::Enter => input_map.set_input(Key::Enter),
+        KeyCode::Backspace | KeyCode::Esc => input_map.set_input(Key::Escape),//app_state.day_offset = 0,
+        
+        KeyCode::Up   | KeyCode::BackTab => input_map.set_input(Key::Up),
+        KeyCode::Down | KeyCode::Tab     => input_map.set_input(Key::Down),
+        
+        KeyCode::Char(x) => input_map.set_input(Key::Command(x)),
+        _ => {}
+    }
+    match key.modifiers {
+        KeyModifiers::SHIFT   => input_map.set_modifier(Modifier::Shift),
+        KeyModifiers::CONTROL => input_map.set_modifier(Modifier::Ctrl ),
+        KeyModifiers::ALT     => input_map.set_modifier(Modifier::Alt  ),
+        _ => {},
+    }
+}
+
 // APPLICATION
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> Result<(), std::io::Error> {
     
@@ -134,26 +161,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         app_state.input_char = char::default();
         if event::poll(Duration::from_millis(1000))? {
             if let Event::Key(key) = event::read()? {
-                use input::*;
-                match key.code {
-                    KeyCode::Right => app_state.input_map.set_input(Key::Right), //app_state.day_offset += 1},
-                    KeyCode::Left  => app_state.input_map.set_input(Key::Left), //app_state.day_offset -= 1},
-                    
-                    KeyCode::Enter => app_state.input_map.set_input(Key::Enter),
-                    KeyCode::Backspace | KeyCode::Esc => app_state.input_map.set_input(Key::Escape),//app_state.day_offset = 0,
-                    
-                    KeyCode::Up   | KeyCode::BackTab => app_state.input_map.set_input(Key::Up),
-                    KeyCode::Down | KeyCode::Tab     => app_state.input_map.set_input(Key::Down),
-                    
-                    KeyCode::Char(x) => app_state.input_map.set_input(Key::Command(x)),
-                    _ => {}
-                }
-                match key.modifiers {
-                    KeyModifiers::SHIFT => app_state.input_map.set_modifier(Modifier::Shift),
-                    KeyModifiers::CONTROL => app_state.input_map.set_modifier(Modifier::Ctrl),
-                    KeyModifiers::ALT => app_state.input_map.set_modifier(Modifier::Alt),
-                    _ => {},
-                }
+                map_inputs(key, &mut app_state.input_map);
             }
         }
         // dbg!(&input_map);
@@ -170,16 +178,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
             };
         };
         
-        if let Some(key) = app_state.input_map.get_key(){
-        use input::{Key, Modifier};
-        match key {
-            (Key::Right, Modifier::Shift) => app_state.day_offset += 30,
-            (Key::Left, Modifier::Shift)  => app_state.day_offset -= 30,
-            (Key::Right, _) => app_state.day_offset += 1,
-            (Key::Left, _)  => app_state.day_offset -= 1,
-            (Key::Escape, _)=> app_state.day_offset =  0,
-            _ => {},
-        };
+        if let Some(key) = app_state.input_map.get_key() {
+            use input::{Key, Modifier};
+            match key {
+                (Key::Right,  Modifier::Shift) => app_state.day_offset += 30,
+                (Key::Left,   Modifier::Shift) => app_state.day_offset -= 30,
+                (Key::Right,  _              ) => app_state.day_offset += 01,
+                (Key::Left,   _              ) => app_state.day_offset -= 01,
+                (Key::Escape, _              ) => app_state.day_offset =  00,
+                _ => {},
+            };
         }
         
         terminal.draw(|f| ui(f, app_state))?;
