@@ -128,28 +128,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn map_inputs(key: event::KeyEvent, input_map: &mut input::InputMap) {
-    
-    use input::*;
-    match key.code {
-        KeyCode::Right => input_map.set_input(Key::Right), //app_state.day_offset += 1},
-        KeyCode::Left  => input_map.set_input(Key::Left), //app_state.day_offset -= 1},
-        KeyCode::Enter => input_map.set_input(Key::Enter),
-        KeyCode::Backspace | KeyCode::Esc => input_map.set_input(Key::Escape),//app_state.day_offset = 0,
-        
-        KeyCode::Up   | KeyCode::BackTab => input_map.set_input(Key::Up),
-        KeyCode::Down | KeyCode::Tab     => input_map.set_input(Key::Down),
-        
-        KeyCode::Char(x) => input_map.set_input(Key::Command(x)),
-        _ => {}
-    }
-    match key.modifiers {
-        KeyModifiers::SHIFT   => input_map.set_modifier(Modifier::Shift),
-        KeyModifiers::CONTROL => input_map.set_modifier(Modifier::Ctrl ),
-        KeyModifiers::ALT     => input_map.set_modifier(Modifier::Alt  ),
-        _ => {},
-    }
-}
 
 // APPLICATION
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> Result<(), std::io::Error> {
@@ -161,7 +139,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         app_state.input_char = char::default();
         if event::poll(Duration::from_millis(1000))? {
             if let Event::Key(key) = event::read()? {
-                map_inputs(key, &mut app_state.input_map);
+                app_state.input_map.map_inputs(key);
             }
         }
         // dbg!(&input_map);
