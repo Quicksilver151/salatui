@@ -1,5 +1,6 @@
 
 pub mod conf;
+
 pub use conf::*;
 
 pub mod input;
@@ -9,14 +10,16 @@ pub mod data;
 pub use data::*;
 
 #[derive(Debug, Default)]
-pub struct UI {
-    name: String,
-    index: u8,
+pub enum Screen {
+    #[default]
+    Main,
+    Config,
+    Calender,
 }
 
 #[derive(Debug, Default)]
 pub struct AppState {
-    pub ui: UI,
+    pub screen: Screen,
     pub fullscreen: bool,
     pub prayertime: PrayerTime,
     pub input_map: input::InputMap,

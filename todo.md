@@ -7,9 +7,10 @@
   - [ ] calculation methods
 
 - [ ] display
+  - [ ] calender
   - [ ] ux
     - [x] switch days
-    - [ ] shift + left/right to switch months
+    - [x] shift + left/right to switch months
   - [ ] indicator variants
 
 - [ ] config

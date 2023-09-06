@@ -37,6 +37,12 @@ pub enum Key {
     Enter,
     Escape,
     
+    // commands
+    Quit,
+    Fullscreen,
+    Config,
+    Calender,
+    
     Command(char),
 }
 #[derive(Debug, Default, Clone)]
