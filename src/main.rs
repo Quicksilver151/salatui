@@ -34,26 +34,9 @@ pub use salat::*;
 pub use parsers::*;
 
 fn output_data(config: &mut Config) {
-    // clipboard testing
-    // let mut x = arboard::Clipboard::new().unwrap();
-    // let selection = LinuxClipboardKind::Primary;
-    // arboard::Clipboard::get(&mut x);
-    // println!("{:?}",x.get().clipboard(selection).text());
-    // let load_dat = TimeSetData::load("GDh. Vilingili");
-    // dbg!(load_dat);
-    // conf.display.show_raw_output = true;
-    // let timeset = MVRawData::default().parse_to_timeset(177).unwrap();
-    // timeset.store(&timeset.name).unwrap();
-    // conf.provider = Provider::Data(timeset.name.to_owned());
     
-    // conf.provider = Provider::Calculation(CalculationMethod::default());
-    // save_data(&conf);
-    // let loaded: Config = confy::load("salatui", "config").unwrap();
-    // salat_times(&conf, &timeset);
     let current_time = chrono::offset::Local::now();
     let current_day = current_time.ordinal0() as usize;
-    // dbg!(current_time.num_seconds_from_midnight() / 60);
-    // dbg!(current_date);
     
     match &config.provider {
         Provider::Data(name) => {
@@ -163,7 +146,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
                 (Key::Left,   Modifier::Shift) => app_state.day_offset -= 30,
                 (Key::Right,  _              ) => app_state.day_offset += 01,
                 (Key::Left,   _              ) => app_state.day_offset -= 01,
-                (Key::Escape, _              ) => app_state.day_offset =  00,
+                (Key::Escape, _              ) => app_state.day_offset  = 00,
                 _ => {},
             };
         }
@@ -172,36 +155,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
     }
 }
 
-// INTERFACE
-
-// fn ui<B: Backend>(f: &mut Frame<B>) {
-//     let parent_chunk: Vec<tui::layout::Rect> = Layout::default()
-//         .direction(Direction::Horizontal)
-//         .constraints(
-//             [
-//                 Constraint::Percentage(50),
-//                 Constraint::Percentage(50),
-//             ].as_ref()
-//         )
-//         .split(f.size());
-//     
-//     let new_section_block = Block::default()
-//         .title("Display")
-//         .borders(Borders::ALL)
-//         .border_type(BorderType::Rounded);
-//     
-//     f.render_widget(new_section_block, parent_chunk[0]);
-//     
-//     let list_section_block = Block::default()
-//         .title(format!("Settings"))
-//         .borders(Borders::ALL)
-//         .border_type(BorderType::Rounded);
-//     
-//     f.render_widget(list_section_block, parent_chunk[1]);
-//     
-//         
-//     
-// }
 
 
 
