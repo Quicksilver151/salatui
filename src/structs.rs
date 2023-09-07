@@ -9,37 +9,6 @@ pub mod input;
 pub mod data;
 pub use data::*;
 
-#[derive(Debug, Default)]
-pub enum Screen {
-    #[default]
-    Main,
-    Config,
-    Calender,
-}
-
-
-pub use tui::{
-    backend::Backend,
-    Frame,
-    layout::{Alignment, Layout, Direction, Constraint, Rect},
-    text::{Span, Line},
-    style::{Color, Modifier, Style}
-};
-
-
-#[derive(Debug, Default)]
-struct UIState {
-    header: String,
-    pub screen: Screen,
-    footer: Vec<[String;2]>,
-    
-    header_rect: Rect,
-    screen_rect: Rect,
-    footer_rect: Rect,
-}
-// impl UIState {
-    // 
-// }
 
 #[derive(Debug, Default)]
 pub struct AppState {
