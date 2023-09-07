@@ -29,8 +29,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     let footer_rect = root_container.footer;
     let commands_block: Block = new_color_block("commands",Color::DarkGray);
     
-    let footer = tui::widgets::Paragraph::new("awdw").block(commands_block);
-    
+    let footer = app_state.ui_state.get_footer_line();
+    let footer = tui::widgets::Paragraph::new(footer).block(commands_block);
+
     let header = new_color_block("header", Color::DarkGray);
     
     
