@@ -17,9 +17,82 @@ pub enum Screen {
     Calender,
 }
 
+
+pub use tui::{
+    backend::Backend,
+    Frame,
+    layout::{Alignment, Layout, Direction, Constraint, Rect},
+    text::{Span, Line},
+    style::{Color, Modifier, Style}
+};
+
+#[derive(Debug, Default)]
+pub struct UIState {
+    header: String,
+    screen: Screen,
+    footer: Vec<[String;2]>,
+    
+    header_rect: Rect,
+    screen_rect: Rect,
+    footer_rect: Rect,
+}
+impl UIState {
+    pub fn set_header(&mut self, header_text: &str) {
+        self.header = header_text.to_string();
+    }
+    pub fn set_screen(&mut self, screen: Screen) {
+        self.screen = screen;
+    }
+    pub fn set_footer(&mut self, commands: Vec<[&str;2]>) {
+        self.footer = commands.iter().map(|v| [v[0].to_string(), v[1].to_string()]).collect();
+    }
+    
+    
+    pub fn set_header_rect(&mut self, rect: Rect) {
+        self.header_rect = rect;
+    }
+    pub fn set_screen_rect(&mut self, rect: Rect) {
+        self.screen_rect = rect;
+    }
+    pub fn get_screen_rect(&mut self) -> Rect {
+        self.screen_rect
+    }
+    pub fn set_footer_rect(&mut self, rect: Rect) {
+        self.footer_rect = rect;
+    }
+    
+    pub fn get_footer_line(&self) -> Line {
+        let mut spans = vec![];
+        for letters in self.footer.iter() {
+            spans.append(&mut vec![
+                
+                Span::styled(letters[0].to_owned(), Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
+                Span::styled(letters[1].to_owned(), Style::default()),
+            ]);
+            if self.footer.iter().last().unwrap() == letters {
+                continue;
+            }
+            spans.append(&mut vec![
+                Span::styled(" | ", Style::default()),
+            ])
+        }
+        
+        Line::from(spans)
+    }
+
+    pub fn get_header_line(&self) -> Line {
+        todo!()
+    }
+    
+    pub fn render_screen<B: Backend>(f: &mut Frame<B> ) {
+        
+    }
+    
+}
+
 #[derive(Debug, Default)]
 pub struct AppState {
-    pub screen: Screen,
+    pub ui_state: UIState,
     pub fullscreen: bool,
     pub prayertime: PrayerTime,
     pub input_map: input::InputMap,
@@ -138,7 +211,7 @@ fn to_time(minutes: &u32) -> (u32, u32){
 fn to_json(time_list: Vec<String>, pretty: bool) -> String {
     if pretty {
     format!(
-    "{{
+"{{
   \"index\":\"{}\",
   \"day\":\"{}\",
   \"fajr\":\"{}\",
