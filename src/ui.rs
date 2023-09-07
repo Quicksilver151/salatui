@@ -5,42 +5,126 @@ mod settings;
 
 pub use menu::*;
 pub use settings::*;
-use tui::{layout::Alignment, widgets::Widget};
 pub use tui::{
-    layout::{Layout, Direction, Constraint, Rect},
+    layout::{Alignment, Layout, Direction, Constraint, Rect},
     text::Span,
     style::Modifier
 };
 
+#[derive(Default, Debug)]
+struct Header {
+    rect: Rect,
+    text: String,
+}
+
+#[derive(Debug, Default)]
+pub enum Screen {
+    #[default]
+    Main,
+    Settings(SettingsContainer),
+    Calender(CalenderContainer),
+}
+
+#[derive(Default, Debug)]
+struct Main {
+    rect: Rect,
+    screen: Screen,
+}
+
+#[derive(Default, Debug)]
+struct Footer {
+    commands: Vec<[String;2]>,
+    rect: Rect,
+}
+
+#[derive(Default, Debug)]
+pub struct UIState {
+    header:Header,
+    main: Main,
+    footer: Footer,
+}
+impl UIState {
+    pub fn set_header(&mut self, header_text: &str) {
+        self.header.text = header_text.to_string();
+    }
+    pub fn set_screen(&mut self, screen: Screen) {
+        self.main.screen = screen;
+    }
+    pub fn set_footer(&mut self, commands: Vec<[&str;2]>) {
+        self.footer.commands = commands.iter().map(|v| [v[0].to_string(), v[1].to_string()]).collect();
+    }
+    
+    
+    pub fn set_header_rect(&mut self, rect: Rect) {
+        self.header.rect = rect;
+    }
+    pub fn set_screen_rect(&mut self, rect: Rect) {
+        self.main.rect = rect;
+    }
+    pub fn get_screen_rect(&mut self) -> Rect {
+        self.main.rect
+    }
+    pub fn set_footer_rect(&mut self, rect: Rect) {
+        self.footer.rect = rect;
+    }
+    
+    pub fn get_footer_line(&self) -> Line {
+        let mut spans = vec![];
+        for letters in self.footer.commands.iter() {
+            spans.append(&mut vec![
+                Span::styled(letters[0].to_owned(), Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
+                Span::styled(letters[1].to_owned(), Style::default()),
+            ]);
+            if self.footer.commands.iter().last().unwrap() == letters {
+                continue;
+            }
+            spans.append(&mut vec![
+                Span::styled(" | ", Style::default()),
+            ])
+        }
+        
+        Line::from(spans)
+    }
+
+    pub fn get_header_line(&self) -> Line {
+        Line::from(self.header.text.to_owned())
+    }
+    
+    pub fn render_screen<B: Backend>(f: &mut Frame<B> ) {
+        
+    }
+}
 
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
-    
+    let mut ui_state = UIState::default();
     
     let root_container:RootContainer = RootContainer::new(f.size());
     
-    match app_state.ui_state.screen {
-        Screen::Main => draw_main(f, app_state),
-        _ => todo!("make other screens"),
-    } 
+    
     if app_state.fullscreen {
-        app_state.ui_state.set_screen_rect(f.size());
+        ui_state.set_screen_rect(f.size());
     } else {
-        app_state.ui_state.set_header_rect(root_container.header);
-        app_state.ui_state.set_screen_rect(root_container.center);
-        app_state.ui_state.set_footer_rect(root_container.footer);
+        ui_state.set_header_rect(root_container.header);
+        ui_state.set_screen_rect(root_container.center);
+        ui_state.set_footer_rect(root_container.footer);
     }
     
+    
+    match ui_state.main.screen {
+        Screen::Main => draw_main(f, app_state, &mut ui_state),
+        _ => todo!("make other screens"),
+    }
     
     let header_rect = root_container.header;
     let footer_rect = root_container.footer;
     let footer_block: Block = new_color_block("commands",Color::DarkGray);
     
     let header_block = new_color_block("header", Color::DarkGray);
-    let header_line = app_state.ui_state.get_header_line();
+    let header_line = ui_state.get_header_line();
 
     let header_widget = Paragraph::new(header_line).block(header_block);
-    let footer_line = app_state.ui_state.get_footer_line();
+    let footer_line = ui_state.get_footer_line();
     let footer_widget = Paragraph::new(footer_line).block(footer_block);
 
     
@@ -73,15 +157,12 @@ fn new_color_block(title: &str, color: Color) -> Block {
     block
 }
 
-pub fn draw_main<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
-    
+pub fn draw_main<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_state: &mut UIState){
     // let input_map = app_state.input_map.to_owned();
     
-    let ui_state = &mut app_state.ui_state;
-
     let layouts = MainContainer::from(ui_state.get_screen_rect());
-    app_state.ui_state.set_header("lol, lmao");
-    app_state.ui_state.set_footer(vec![
+    ui_state.set_header("lol, lmao");
+    ui_state.set_footer(vec![
         ["q", "uit"],
         ["c", "onfig"],
         ["f", "ullscreen"],
@@ -156,9 +237,16 @@ pub fn draw_main<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     
 }
 
+#[derive(Debug, Default)]
+pub struct CalenderContainer {
+
+}
+
+#[derive(Debug, Default)]
 pub struct SettingsContainer {
     
 }
+#[derive(Debug, Default)]
 pub struct MainContainer {
     title: Rect,
     salat: Rect,
