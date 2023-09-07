@@ -18,21 +18,31 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     
     
     let root_container:RootContainer = RootContainer::new(f.size());
-    draw_main(f, app_state);
     
-    app_state.ui_state.set_header_rect(root_container.header);
-    app_state.ui_state.set_screen_rect(root_container.center);
-    app_state.ui_state.set_footer_rect(root_container.footer);
+    match app_state.ui_state.screen {
+        Screen::Main => draw_main(f, app_state),
+        _ => todo!("make other screens"),
+    } 
+    if app_state.fullscreen {
+        app_state.ui_state.set_screen_rect(f.size());
+    } else {
+        app_state.ui_state.set_header_rect(root_container.header);
+        app_state.ui_state.set_screen_rect(root_container.center);
+        app_state.ui_state.set_footer_rect(root_container.footer);
+    }
     
     
     let header_rect = root_container.header;
     let footer_rect = root_container.footer;
-    let commands_block: Block = new_color_block("commands",Color::DarkGray);
+    let footer_block: Block = new_color_block("commands",Color::DarkGray);
     
-    let footer = app_state.ui_state.get_footer_line();
-    let footer = tui::widgets::Paragraph::new(footer).block(commands_block);
+    let header_block = new_color_block("header", Color::DarkGray);
+    let header_line = app_state.ui_state.get_header_line();
 
-    let header = new_color_block("header", Color::DarkGray);
+    let header_widget = Paragraph::new(header_line).block(header_block);
+    let footer_line = app_state.ui_state.get_footer_line();
+    let footer_widget = Paragraph::new(footer_line).block(footer_block);
+
     
     
     // let titles:Vec<Line> = ["Tab1", "Tab2", "Tab3", "Tab4"].iter().cloned().map(Line::from).collect();
@@ -50,10 +60,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     // 
     // f.render_widget(tabthings, layouts.menu[0]);
     
-    if app_state.fullscreen {return;}
-    f.render_widget(header, root_container.header);
-    f.render_widget(footer, root_container.footer);
-    // f.render_widget(block_3, root_container.center);
+    if app_state.fullscreen {return;} // prevent rendering in case of fullscreen
+    f.render_widget(header_widget, header_rect);
+    f.render_widget(footer_widget, footer_rect);
 }
 
 fn new_color_block(title: &str, color: Color) -> Block {
@@ -70,12 +79,8 @@ pub fn draw_main<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     
     let ui_state = &mut app_state.ui_state;
 
-    let layouts = if app_state.fullscreen {
-        MainContainer::from(f.size())
-    } else {
-        MainContainer::from(ui_state.get_screen_rect())
-    };
-    
+    let layouts = MainContainer::from(ui_state.get_screen_rect());
+    app_state.ui_state.set_header("lol, lmao");
     app_state.ui_state.set_footer(vec![
         ["q", "uit"],
         ["c", "onfig"],

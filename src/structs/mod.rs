@@ -29,7 +29,7 @@ pub use tui::{
 #[derive(Debug, Default)]
 pub struct UIState {
     header: String,
-    screen: Screen,
+    pub screen: Screen,
     footer: Vec<[String;2]>,
     
     header_rect: Rect,
@@ -81,7 +81,7 @@ impl UIState {
     }
 
     pub fn get_header_line(&self) -> Line {
-        todo!()
+        Line::from(self.header.to_owned())
     }
     
     pub fn render_screen<B: Backend>(f: &mut Frame<B> ) {
