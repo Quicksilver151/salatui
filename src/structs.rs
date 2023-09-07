@@ -9,6 +9,7 @@ pub mod input;
 pub mod data;
 pub use data::*;
 
+use crate::Screen;
 
 #[derive(Debug, Default)]
 pub struct AppState {
@@ -19,9 +20,11 @@ pub struct AppState {
     pub config: Config,
     pub timeset_data: TimeSetData,
     pub day_offset: i64,
+    pub screen: Screen,
 }
 
 use serde::*;
+
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PrayerTime {

@@ -1,16 +1,4 @@
-use crate::ui::*;
-
-use tui::layout::{Layout, Direction, Constraint, Rect};
-
-pub fn get_menu_layout<B: Backend>(f: &mut Frame<B>) -> Vec<Rect> {
-
-    Layout::default()
-        .direction(Direction::Horizontal) .constraints([
-            Constraint::Percentage(100),
-        ].as_ref()
-    ).split(f.size()).to_vec()
-}
-
+use super::*;
 
 pub fn draw_menu<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_state: &mut UIState){
     // let input_map = app_state.input_map.to_owned();

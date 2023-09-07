@@ -147,6 +147,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
                 (Key::Right,  _              ) => app_state.day_offset += 01,
                 (Key::Left,   _              ) => app_state.day_offset -= 01,
                 (Key::Escape, _              ) => app_state.day_offset  = 00,
+                (Key::Config, _              ) => app_state.screen = Screen::Settings,
                 _ => {},
             };
         }

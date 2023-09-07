@@ -22,12 +22,12 @@ struct Header {
     text: String,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum Screen {
     #[default]
     Menu,
-    Settings(SettingsContainer),
-    Calender(CalenderContainer),
+    Settings,
+    Calender,
 }
 
 #[derive(Default, Debug)]
@@ -104,6 +104,8 @@ impl UIState {
 pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     // inits
     let mut ui_state = UIState::default();
+    ui_state.set_screen(app_state.screen);
+    
     let root_container:RootContainer = RootContainer::new(f.size());
     
     // fullscreen area toggle
@@ -118,7 +120,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     // center display
     match ui_state.main.screen {
         Screen::Menu => draw_menu(f, app_state, &mut ui_state),
-        Screen::Settings(_) => {},
+        Screen::Settings => draw_settings(f, app_state, &mut ui_state),
         _ => todo!("make other screens"),
     }
     

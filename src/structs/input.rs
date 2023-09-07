@@ -65,6 +65,7 @@ impl InputMap {
             KeyCode::Up   | KeyCode::BackTab => self.set_input(Key::Up),
             KeyCode::Down | KeyCode::Tab     => self.set_input(Key::Down),
             
+            KeyCode::Char('c') => self.set_input(Key::Config),
             KeyCode::Char(x) => self.set_input(Key::Command(x)),
             _ => {}
         }
