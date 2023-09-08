@@ -1,9 +1,11 @@
 use crate::*;
 
+mod calender;
 mod menu;
 mod settings;
 mod utils;
 
+use calender::*;
 use menu::*;
 use settings::*;
 use utils::*;
