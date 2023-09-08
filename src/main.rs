@@ -130,6 +130,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         // =====
         // Logic
         // =====
+        use input::*;
+        match app_state.screen {
+            Screen::Settings => {
+                match app_state.input_map.get_key().unwrap_or_default() {
+                    (Key::Escape, _) => app_state.screen = Screen::Menu,
+                    _ => {},
+                }
+            },
+            _ => {},
+        }
+        
         let command = app_state.input_map.get_command();
         if let Some(command) = command {
             match command {
@@ -140,7 +151,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         };
         
         if let Some(key) = app_state.input_map.get_key() {
-            use input::{Key, Modifier};
             match key {
                 (Key::Right,  Modifier::Shift) => app_state.day_offset += 30,
                 (Key::Left,   Modifier::Shift) => app_state.day_offset -= 30,

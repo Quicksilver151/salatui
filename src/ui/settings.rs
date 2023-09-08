@@ -24,6 +24,19 @@ pub fn get_settings_layout(rect: Rect, container_size: [f64;4]) -> Vec<Rect> {
 
 
 pub fn draw_settings<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_state: &mut UIState) {
+    use input::*;
+    // match app_state.input_map.get_key().unwrap_or_default() {
+    //     (Key::Escape, _) => app_state.screen = Screen::Menu,
+    //     _ => {},
+    // }
+    
+    ui_state.set_header("Settings");
+    ui_state.set_footer(
+        vec![
+        ["esc","ape"],
+        ["q","uit"],
+
+    ]);
     
     let layouts = get_settings_layout(ui_state.main.rect, [1.0,1.0,1.0,1.0]);
     

@@ -28,8 +28,8 @@ pub fn get_calender_layout(rect: Rect, container_size: [f64;4]) -> Vec<Rect> {
 pub fn draw_calender<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_state: &mut UIState) {
     
     let layouts = get_settings_layout(ui_state.main.rect, [1.0,1.0,1.0,1.0]);
-    let display_date = chrono::offset::Local::now().date();
-    let events = "aa";
+    // let display_date = chrono::offset::Local::now().date();
+    // let events = "aa";
     let a = new_color_block("aaaaa", Color::Red);
     let b = new_color_block("bbbbb", Color::Red);
     let c = new_color_block("ccccc", Color::Red);
