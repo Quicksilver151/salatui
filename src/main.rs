@@ -132,10 +132,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         // =====
         use input::*;
         match app_state.screen {
-            Screen::Settings => {
-                match app_state.input_map.get_key().unwrap_or_default() {
-                    (Key::Escape, _) => app_state.screen = Screen::Menu,
-                    _ => {},
+            Screen::Menu => {
+                
+            }
+            Screen::Settings => { match app_state.input_map.get_key().unwrap_or_default() {
+                (Key::Escape, _) => app_state.screen = Screen::Menu,
+                _ => {},
                 }
             },
             _ => {},

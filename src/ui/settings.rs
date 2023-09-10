@@ -35,7 +35,7 @@ pub fn draw_settings<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_
         vec![
         ["esc","ape"],
         ["q","uit"],
-
+    
     ]);
     
     let layouts = get_settings_layout(ui_state.main.rect, [1.0,1.0,1.0,1.0]);
