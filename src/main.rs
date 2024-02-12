@@ -21,6 +21,7 @@ pub use tui::{
 pub use serde::{Serialize, Deserialize};
 pub use directories::*;
 use chrono::*;
+pub use notify_rust::*;
 
 // mod files
 mod structs;
@@ -58,6 +59,18 @@ fn output_data(config: &mut Config) {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    
+    Notification::new()
+        .summary("Asr")
+        .body("Adan")
+        .auto_icon()
+        .appname("salatui")
+        .hint(Hint::Urgency(Urgency::Normal))
+        .timeout(Timeout::Never)
+        .show().unwrap();
+    
+    
+    
     // init config
     Config::init().unwrap();
     let args = Args::parse();
