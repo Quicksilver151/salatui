@@ -1,0 +1,115 @@
+
+* Feature List:
+  - (-) Salat Display
+  - ( ) Salat Config
+  - ( ) Raw Data Output
+  - (-) Source Data From Website
+
+
+
+* Project Planned changes and additions:
+** General
+   - decide what to do with leap years
+   -- reuse previous/next day if day = feb 29?
+   -- on storage or on runtime?
+   --- probably runtime
+** Structure:
+**** Backends
+***** Dataset (salahtimes.com)
+      - can receive details
+      - has details structs
+      - parses content to storable data
+      - sends over storable data
+***** RSS (salahtimes.com)
+**** Data
+***** config
+      - stores version info (or store all data as optional)
+      - general app config
+      - Stores metadata for storable data so that data is recoverable
+***** local
+      - version info?
+      - Stores storable data
+**** Utils
+***** arg parser
+      - Parses system args
+      - sets conditions and pass to main
+      - can set to daemon mode (stdout or fifo)
+      - set config file path to use (fail after not finding)
+**** UI:
+***** WHERE TO STORE UI STATE????
+      - Dynamically calculate ui state based on data passed in
+      - then whatabout ui specific data like focused box?
+      -- best put in main.rs i think.
+      -- first declare the structs in ui files
+      -- then generate em in main.rs
+***** main ui
+      - find a way to make it responsive.
+      - pass the ui the entire year list?
+      - ideas:
+      -- grab day num when action pressed in main.rs
+      -- retrieve data from num
+      -- pass that data into ui
+      -- so main iteration must take place in main.rs
+      -- overall app state must be modified in main then only data passed into ui
+      -- ui should not process any data, period
+***** conf
+      - main loop in main.rs
+      - state of focused windows, inputs and modes to be stored in main.
+      - inputs handled in main (or conf.rs)
+      - strictly only receive info to display
+      - this includes user input into fields
+
+
+*** Main
+
+
+
+
+
+
+
+
+
+
+
+
+
+* TODO:
+
+- (-) [provider]
+-- (x) built in salat-mv dataset
+-- ( ) fix day 366 error (leap year)
+-- ( ) calculation methods
+
+- (-) [display]
+-- ( ) calender
+-- ( ) ux
+  -- (x) switch days
+  -- (x) shift + left/right to switch months
+-- ( ) indicator variants
+
+- (-) [config]
+-- (x) model the config data
+-- (x) load/save config
+-- (x) load/save data
+-- ( ) get started with ui
+
+- ( ) [notifs]
+-- ( ) try to implement a universal notif (or give up and just use notify-send)
+-- ( ) notif timer offset for each pt
+
+- ( ) [general]
+-- ( ) make a separate current datetime for display and notifs/internal logic
+-- ( ) better input handling (currently inputmap is useless as input is used directly) (maybe use enum?)
+
+- ( ) [optimisations]
+-- ( ) better data parsing
+
+  ---
+
+
+
+
+
+
+
