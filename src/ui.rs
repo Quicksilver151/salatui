@@ -20,7 +20,7 @@ pub use tui::{
 };
 
 
-pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
+pub fn ui<B: Backend>(f: &mut Frame, app_state: &mut AppState){
     // inits
     let mut ui_state = UIState::default();
     ui_state.set_screen(app_state.screen);
@@ -38,8 +38,8 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState){
     
     // center display
     match ui_state.main.screen {
-        Screen::Menu => draw_menu(f, app_state, &mut ui_state),
-        Screen::Settings => draw_settings(f, app_state, &mut ui_state),
+        Screen::Menu => draw_menu::<B>(f, app_state, &mut ui_state),
+        Screen::Settings => draw_settings::<B>(f, app_state, &mut ui_state),
         _ => todo!("make other screens"),
     }
     
@@ -94,7 +94,7 @@ impl RootContainer {
     }
 }
 
-// changable setting ui + struct needed here Option{SettingType}; settingtype::choice(vec), string(or int)
+// changeable setting ui + struct needed here Option{SettingType}; settingtype::choice(vec), string(or int)
 impl MainContainer {
     /// the main layout
     pub fn from(area: Rect) -> MainContainer {

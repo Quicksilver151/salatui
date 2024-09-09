@@ -7,6 +7,7 @@ pub use event::{KeyCode, KeyModifiers, EnableMouseCapture, DisableMouseCapture, 
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 // pub use arboard::*;
 pub use clap::Parser;
+use tui::backend;
 pub use tui::{
     Terminal,
     Frame,
@@ -28,11 +29,13 @@ mod structs;
 mod ui;
 mod salat;
 mod parsers;
+mod backends;
 
 pub use structs::*;
 pub use ui::*;
 pub use salat::*;
 pub use parsers::*;
+pub use backends::*;
 
 fn output_data(config: &mut Config) {
     
@@ -102,6 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         EnableMouseCapture
     )?;
     
+    
     // init tui
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
@@ -128,7 +132,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 // APPLICATION
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> Result<(), std::io::Error> {
     
-    terminal.draw(|f| ui(f, app_state))?;
+    terminal.draw(|f| ui::<B>(f, app_state))?;
     loop {
         // InputMap
         app_state.input_map.reset();
@@ -177,7 +181,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
             };
         }
         
-        terminal.draw(|f| ui(f, app_state))?;
+        terminal.draw(|f| ui::<B>(f, app_state))?;
     }
 }
 

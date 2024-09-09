@@ -23,7 +23,7 @@ pub fn get_settings_layout(rect: Rect, container_size: [f64;4]) -> Vec<Rect> {
 
 
 
-pub fn draw_settings<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_state: &mut UIState) {
+pub fn draw_settings<B: Backend>(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState) {
     use input::*;
     // match app_state.input_map.get_key().unwrap_or_default() {
     //     (Key::Escape, _) => app_state.screen = Screen::Menu,

@@ -89,23 +89,23 @@ pub enum RawOutputMode {
 pub struct RawOutput {
     pub mode: RawOutputMode,
     pub pool: bool,
-    pub raw_seperator: String,
+    pub raw_separator: String,
     pub custom_string: String
 }
 #[allow(dead_code)]
 impl RawOutput {
     fn set_separator(&mut self, sep: &str) {
-        self.raw_seperator = sep.to_string();
+        self.raw_separator = sep.to_string();
     }
 }
 impl Default for RawOutput {
     fn default() -> Self {
         let mode = RawOutputMode::default();
         let pool = false;
-        let raw_seperator = String::from("\n");
+        let raw_separator = String::from("\n");
         let custom_string = String::from("[%fhmp, %shmp, &dhmp, %ahmp, %mhmp, %ihmp]");
         
-        RawOutput { mode, pool, raw_seperator,custom_string}
+        RawOutput { mode, pool, raw_separator,custom_string}
     }
 }
 

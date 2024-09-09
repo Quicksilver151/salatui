@@ -117,7 +117,7 @@ impl PrayerTime {
                         string.push_str(time);
                         continue;
                     }
-                    string.push_str(&format!("{}{}",time,outconf.raw_seperator))
+                    string.push_str(&format!("{}{}",time,outconf.raw_separator))
                 }
                 string
             }

@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn draw_menu<B: Backend>(f: &mut Frame<B>, app_state: &mut AppState, ui_state: &mut UIState){
+pub fn draw_menu<B: Backend>(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState){
     // let input_map = app_state.input_map.to_owned();
     
     let layouts = MainContainer::from(ui_state.get_screen_rect());

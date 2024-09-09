@@ -80,7 +80,7 @@ impl UIState {
         Line::from(self.header.text.to_owned())
     }
     
-    pub fn render_screen<B: Backend>(f: &mut Frame<B> ) {
+    pub fn render_screen<B: Backend>(f: &mut Frame) {
         
     }
 }
