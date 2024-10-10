@@ -6,12 +6,48 @@
   - (-) Source Data From Website
 
 
+* File Organisation
+  - args.rs (arg parsing)
+  - main.rs (main)
+  - structs (runtime data)
+
+** Backends
+   - mod.rs -> returns runtime data structs (so it should import it runtime data)
+   - salat-com.rs (Salat.com api and salat structs) 
+
+** Data
+   - mod.rs
+   - Config.rs (data)
+   - Local.rs (local data)
+
+** UI
+   - mod.rs (choice structs, takes in choices and ui data, chooses correct ui and calls its method)
+   - utils 
+   - main
+   - settings
+
+
+
+
+
+
+
+
+* TODO:
+  - ( ) File Organisation
+  - ( ) Get the data structures done
+  -- ( ) runtime data structures
+  -- ( ) Save data structures (+rewrite)
+  -- ( ) Website API datastructures
+
+
 
 * Project Planned changes and additions:
 ** General
    - decide what to do with leap years
    -- reuse previous/next day if day = feb 29?
-   -- on storage or on runtime?
+   --- day % 365 (jan 1 repeated for day 366)
+   --- on storage or on runtime?
    --- probably runtime
 ** Structure:
 **** Backends
