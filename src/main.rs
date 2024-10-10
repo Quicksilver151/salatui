@@ -63,14 +63,14 @@ fn output_data(config: &mut Config) {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
-    Notification::new()
-        .summary("Asr")
-        .body("Adan")
-        .auto_icon()
-        .appname("salatui")
-        .hint(Hint::Urgency(Urgency::Normal))
-        .timeout(Timeout::Never)
-        .show().unwrap();
+    // Notification::new()
+    //     .summary("Asr")
+    //     .body("Adan")
+    //     .auto_icon()
+    //     .appname("salatui")
+    //     .hint(Hint::Urgency(Urgency::Normal))
+    //     .timeout(Timeout::Never)
+    //     .show().unwrap();
     
     
     

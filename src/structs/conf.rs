@@ -138,7 +138,7 @@ impl Config {
     }
     
     pub fn load() -> Result<Config, confy::ConfyError> {
-        confy::load("salatui", "config")
+        confy::load("salatui", "config-dev")
     }
     pub fn load_valid() -> Config {
         match Self::load() {
