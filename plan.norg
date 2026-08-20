@@ -1,10 +1,10 @@
 
 * Feature List:
-  - (-) Salat Display
+  - (x) Salat Display
   - ( ) Salat Config
   - ( ) Raw Data Output
-  - (-) Source Data From Website
-
+  - (_) Source Data From Website
+  - (x) Calc
 
 * File Organisation
   - args.rs (arg parsing)
@@ -12,13 +12,14 @@
   - structs (runtime data)
 
 ** Backends
-   - mod.rs -> returns runtime data structs (so it should import it runtime data)
+   - mod.rs -> returns runtime data structs (stores data in respective format. parses to runtime format)
+   - salah calc
    - salat-com.rs (Salat.com api and salat structs) 
 
 ** Data
    - mod.rs
    - Config.rs (data)
-   - Local.rs (local data)
+   - Local.rs (local data) 
 
 ** UI
    - mod.rs (choice structs, takes in choices and ui data, chooses correct ui and calls its method)
@@ -29,14 +30,11 @@
 
 
 
-
-
-
-
 * TODO:
-  - ( ) File Organisation
+  - (x) File Organisation
   - ( ) Get the data structures done
   -- ( ) runtime data structures
+  -- ( ) calc
   -- ( ) Save data structures (+rewrite)
   -- ( ) Website API datastructures
 
@@ -56,7 +54,8 @@
       - has details structs
       - parses content to storable data
       - sends over storable data
-***** RSS (salahtimes.com)
+***** Calc (salah crate)
+***** RSS? (salahtimes.com)
 **** Data
 ***** config
       - stores version info (or store all data as optional)
@@ -75,9 +74,9 @@
 ***** WHERE TO STORE UI STATE????
       - Dynamically calculate ui state based on data passed in
       - then whatabout ui specific data like focused box?
-      -- best put in main.rs i think.
-      -- first declare the structs in ui files
-      -- then generate em in main.rs
+      -- best create it in main.rs i think.
+      --- first declare the structs in ui files
+      --- then generate em in main.rs
 ***** main ui
       - find a way to make it responsive.
       - pass the ui the entire year list?
@@ -85,7 +84,7 @@
       -- grab day num when action pressed in main.rs
       -- retrieve data from num
       -- pass that data into ui
-      -- so main iteration must take place in main.rs
+      -- so main iteration must take place  minain.rs
       -- overall app state must be modified in main then only data passed into ui
       -- ui should not process any data, period
 ***** conf

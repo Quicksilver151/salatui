@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn draw_menu<B: Backend>(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState){
+pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState){
     // let input_map = app_state.input_map.to_owned();
     
     let layouts = MainContainer::from(ui_state.get_screen_rect());
@@ -9,7 +9,7 @@ pub fn draw_menu<B: Backend>(f: &mut Frame, app_state: &mut AppState, ui_state: 
         ["q", "uit"],
         ["c", "onfig"],
         ["f", "ullscreen"],
-        ["esc", "ape"],
+        ["Esc", "ape"],
     ]);
     // let title = input_map.get_current().unwrap_or(String::new());
     
@@ -35,15 +35,20 @@ pub fn draw_menu<B: Backend>(f: &mut Frame, app_state: &mut AppState, ui_state: 
     
     let title_widget = Paragraph::new(title_text).block(title_block);
     
+    // HACK: slat calc testing ==============================================
+    // let conf: SalahCalcConfig = salah_calc::SalahCalcConfig::tmpnew();
+    // let prayer_times = app_state.timeset_data.data_from_day(current_date.ordinal() as usize);
+    // ENDHACK
     
-    let prayer_times = app_state.timeset_data.data_from_day(current_date.ordinal() as usize);
+    let prayer_times: PrayerTimes = app_state.get_prayer_times();
+
     
     let salat_index = prayer_times.get_current_index() - match app_state.config.display.indicator{
         TimeIndicator::Next => 0,
         TimeIndicator::Current => 1,
         _ => 0,
     };
-    let prayer_times = prayer_times.format_time(&app_state.config);
+    let prayer_times: Vec<String> = prayer_times.format_time(&app_state.config);
     
     
     // let salat_index = 5;

@@ -7,7 +7,6 @@ pub use event::{KeyCode, KeyModifiers, EnableMouseCapture, DisableMouseCapture, 
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 // pub use arboard::*;
 pub use clap::Parser;
-use tui::backend;
 pub use tui::{
     Terminal,
     Frame,
@@ -27,23 +26,20 @@ pub use notify_rust::*;
 // mod files
 mod structs;
 mod ui;
-mod salat;
 mod parsers;
 mod backends;
 
 pub use structs::*;
 pub use ui::*;
-pub use salat::*;
 pub use parsers::*;
 pub use backends::*;
 
 fn output_data(config: &mut Config) {
-    
     let current_time = chrono::offset::Local::now();
     let current_day = current_time.ordinal0() as usize;
     
     match &config.provider {
-        Provider::Data(name) => {
+        ProviderConfig::Data(name) => {
             let loaded = TimeSetData::load(name).unwrap();
             loop {
                 let today_data = loaded.data_from_day(current_day);
@@ -57,7 +53,7 @@ fn output_data(config: &mut Config) {
             // let today_dataset = PrayerTime::from_vec(loaded.data[current_date].clone());
         },
         
-        Provider::Calculation(_) =>{},
+        ProviderConfig::Calculation(_) =>{},
     }
 }
 
@@ -75,21 +71,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     
     // init config
-    Config::init().unwrap();
+    // Config::init();
     let args = Args::parse();
-    let mut config = match Config::load(){
-        Ok(config) => config,
-        Err(err) => {
-            println!("{err}\nconfig is broken\nloading a new config from defaults");
-            Config::default()
-        }
+
+    let mut config: Config = match args.config {
+        Some(config_path) => Config::load_from_path(config_path),
+        None => Config::load(),
     };
+
+    // config.save().unwrap();
     
     // init timeset
-    let timeset_data: TimeSetData = match &config.provider {
-        Provider::Data(name) => TimeSetData::load(name).unwrap(),
-        _ => todo!(),
-    };
+    // let timeset_data: TimeSetData = match &config.provider {
+    //     ProviderConfig::Data(name) => TimeSetData::load(name).unwrap(),
+    //     _ => todo!(),
+    // };
     
     if args.output {
         output_data(&mut config);
@@ -109,8 +105,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // init tui
     let backend = CrosstermBackend::new(std::io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let mut app_state: AppState = AppState{config, timeset_data, ..Default::default()};
-    
+    let mut app_state: AppState = AppState{config, ..Default::default()};
+    app_state.init_provider();
     // main
     let result = run_app(&mut terminal, &mut app_state);
     
@@ -137,10 +133,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         // InputMap
         app_state.input_map.reset();
         app_state.input_char = char::default();
-        if event::poll(Duration::from_millis(1000))? {
-            if let Event::Key(key) = event::read()? {
-                app_state.input_map.map_inputs(key);
-            }
+        if event::poll(Duration::from_millis(1000))?
+            && let Event::Key(key) = event::read()?
+        {
+            app_state.input_map.map_inputs(key);
         }
         // dbg!(&input_map);
         
@@ -152,9 +148,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
             Screen::Menu => {
                 
             }
-            Screen::Settings => { match app_state.input_map.get_key().unwrap_or_default() {
-                (Key::Escape, _) => app_state.screen = Screen::Menu,
-                _ => {},
+            Screen::Settings => {
+                if let (Key::Escape, _) = app_state.input_map.get_key().unwrap_or_default() {
+                    app_state.screen = Screen::Menu
                 }
             },
             _ => {},
@@ -173,9 +169,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
             match key {
                 (Key::Right,  Modifier::Shift) => app_state.day_offset += 30,
                 (Key::Left,   Modifier::Shift) => app_state.day_offset -= 30,
-                (Key::Right,  _              ) => app_state.day_offset += 01,
-                (Key::Left,   _              ) => app_state.day_offset -= 01,
-                (Key::Escape, _              ) => app_state.day_offset  = 00,
+                (Key::Right,  _              ) => app_state.day_offset += 1,
+                (Key::Left,   _              ) => app_state.day_offset -= 1,
+                (Key::Escape, _              ) => app_state.day_offset  = 0,
                 (Key::Config, _              ) => app_state.screen = Screen::Settings,
                 _ => {},
             };

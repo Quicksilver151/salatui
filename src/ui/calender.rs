@@ -1,7 +1,6 @@
-use tui::widgets;
-
 use super::*;
 
+#[allow(dead_code)]
 pub fn get_calender_layout(rect: Rect, container_size: [f64;4]) -> Vec<Rect> {
 
     
@@ -25,7 +24,8 @@ pub fn get_calender_layout(rect: Rect, container_size: [f64;4]) -> Vec<Rect> {
 
 
 
-pub fn draw_calender<B: Backend>(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState) {
+#[allow(dead_code)]
+pub fn draw_calender(f: &mut Frame, _app_state: &mut AppState, ui_state: &mut UIState) {
     
     let layouts = get_settings_layout(ui_state.main.rect, [1.0,1.0,1.0,1.0]);
     // let display_date = chrono::offset::Local::now().date();

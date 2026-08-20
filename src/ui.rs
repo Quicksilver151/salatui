@@ -6,7 +6,6 @@ mod settings;
 mod utils;
 mod structs;
 
-use calender::*;
 use menu::*;
 use settings::*;
 use utils::*;
@@ -24,12 +23,11 @@ pub fn ui<B: Backend>(f: &mut Frame, app_state: &mut AppState){
     // inits
     let mut ui_state = UIState::default();
     ui_state.set_screen(app_state.screen);
-    ui::structs::Screen::Menu;
-    let root_container:RootContainer = RootContainer::new(f.size());
+    let root_container:RootContainer = RootContainer::new(f.area());
     
     // fullscreen area toggle
     if app_state.fullscreen {
-        ui_state.set_screen_rect(f.size());
+        ui_state.set_screen_rect(f.area());
     } else {
         ui_state.set_header_rect(root_container.header);
         ui_state.set_screen_rect(root_container.center);
@@ -38,8 +36,8 @@ pub fn ui<B: Backend>(f: &mut Frame, app_state: &mut AppState){
     
     // center display
     match ui_state.main.screen {
-        Screen::Menu => draw_menu::<B>(f, app_state, &mut ui_state),
-        Screen::Settings => draw_settings::<B>(f, app_state, &mut ui_state),
+        Screen::Menu => draw_menu(f, app_state, &mut ui_state),
+        Screen::Settings => draw_settings(f, app_state, &mut ui_state),
         _ => todo!("make other screens"),
     }
     

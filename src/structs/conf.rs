@@ -1,23 +1,110 @@
+
+use core::panic;
+use std::path::PathBuf;
+
 use crate::*;
 // [Provider] ===================================
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct CalculationMethod {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CalculationConfig {
     pub name: String,
     pub location: String,
-    pub coordinates: (String, String)  //TODO: change to actual coord struct
-    
+    pub method: Method,
+    pub madhab: Madhab,
+    pub coordinates: Coords
+}
+
+impl Default for CalculationConfig {
+    fn default() -> Self {
+        let name:String = "Default".into();
+        let location: String = "Kaaba".into();
+        let method = Method::default();
+        let madhab = Madhab::default();
+        let coordinates = Coords{latitude: 21.4225, longitude: 39.8262};
+
+        CalculationConfig { name, location, method, madhab, coordinates}
+    }
+}
+
+
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum Method {
+    #[default]
+    MuslimWorldLeague,    
+    Egyptian,    
+    Karachi,    
+    UmmAlQura,    
+    Dubai,    
+    MoonsightingCommittee,    
+    NorthAmerica,    
+    Kuwait,    
+    Qatar,    
+    Singapore,    
+    Tehran,    
+    Turkey,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum Madhab {
+    #[default]
+    Shafi = 1,
+    Hanafi = 2,
+}
+impl Madhab {
+    pub fn to_runtime_config(&self) -> salah::Madhab {
+        match self {
+            Self::Shafi => salah::Madhab::Shafi,
+            Self::Hanafi => salah::Madhab::Hanafi,
+        }
+    }
+}
+
+
+impl Method {
+    pub fn to_runtime_config(&self) -> salah::Method {
+        match self {
+            Self::MuslimWorldLeague     => salah::Method::MuslimWorldLeague,
+            Self::Egyptian              => salah::Method::Egyptian,
+            Self::Karachi               => salah::Method::Karachi,
+            Self::UmmAlQura             => salah::Method::UmmAlQura,
+            Self::Dubai                 => salah::Method::Dubai,
+            Self::MoonsightingCommittee => salah::Method::MoonsightingCommittee,
+            Self::NorthAmerica          => salah::Method::NorthAmerica,
+            Self::Kuwait                => salah::Method::Kuwait,
+            Self::Qatar                 => salah::Method::Qatar,
+            Self::Singapore             => salah::Method::Singapore,
+            Self::Tehran                => salah::Method::Tehran,
+            Self::Turkey                => salah::Method::Turkey,
+
+        }
+
+    }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct Coords {
+    pub latitude: f64,
+    pub longitude: f64,
+}
+impl Coords {
+    pub fn to_runtime_config(&self) -> salah::Coordinates{
+        salah::Coordinates{
+            latitude: self.latitude,
+            longitude: self.longitude,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Provider {
+pub enum ProviderConfig {
     Data(String),
-    Calculation(CalculationMethod),
+    Calculation(CalculationConfig),
 }
-impl Default for Provider {
+impl Default for ProviderConfig {
     fn default() -> Self {
-        Self::Data(String::from(""))
+        Self::Calculation(CalculationConfig::default())
     }
 }
 
@@ -103,7 +190,7 @@ impl Default for RawOutput {
         let mode = RawOutputMode::default();
         let pool = false;
         let raw_separator = String::from("\n");
-        let custom_string = String::from("[%fhmp, %shmp, &dhmp, %ahmp, %mhmp, %ihmp]");
+        let custom_string = String::from("[%fh:mp, %sh:mp, %dh:mp, %ah:mp, %mh:mp, %ih:mp]");
         
         RawOutput { mode, pool, raw_separator,custom_string}
     }
@@ -113,46 +200,53 @@ impl Default for RawOutput {
 //                  [CONFIG] 
 // ============================================
 
+// CONSTS
+
+const CONFIG_NAME: &str = "config-dev";
+
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
-    pub provider: Provider,
+    pub provider: ProviderConfig,
     pub display: Display,
     pub notifications: Notifications,
     pub raw_output: RawOutput,
 }
 impl Config {
     
-    pub fn init() -> Result<(), confy::ConfyError> {
-        
-        let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
-        let mut confdir = dirs.config_dir().to_path_buf();
-        confdir.push("config.toml");
-        
-        if std::path::Path::exists(&confdir){
-            Ok(())
-        } else {
-            println!("config is missing\ncreating new config with defaults");
-            let defaults = Config::default();
-            confy::store("salatui", "config", defaults)
-        }
-    }
-    
-    pub fn load() -> Result<Config, confy::ConfyError> {
-        confy::load("salatui", "config-dev")
-    }
-    pub fn load_valid() -> Config {
-        match Self::load() {
+    pub fn load() -> Config {
+        match confy::load("salatui", CONFIG_NAME){
             Ok(config) => config,
             Err(err) => {
-                println!("failed to load due to\n{err}");
-                println!("using default data");
-                Self::default()
+                println!("{err}\nconfig is broken\nloading a new config from defaults");
+                let new_config = Config {
+                    provider: ProviderConfig::Calculation(CalculationConfig::default()),
+                    ..Config::default()
+                };
+
+                match new_config.save() {
+                    Ok(_) => {}
+                    Err(err) => println!("Failed to create new file due to Error: {}",err),
+                }
+
+                new_config
             }
         }
     }
+
+    pub fn load_from_path(path: PathBuf) -> Config {
+        match confy::load_path(path){
+            Ok(config) => config,
+            Err(err) => {
+                panic!("{err}\n config is broken or not accessible");
+            }
+        }
+    }
+
+
     
     pub fn save(&self) -> Result<(), confy::ConfyError> {
-        confy::store("salatui", "config", self)
+        confy::store("salatui", CONFIG_NAME, self)
     }
     
 }

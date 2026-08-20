@@ -8,26 +8,85 @@ pub mod input;
 
 pub mod data;
 pub use data::*;
+use salah::{Datelike, NaiveDate};
 
-use crate::Screen;
+use crate::{salah_calc::SalahCalcConfig, Screen};
 
 #[derive(Debug, Default)]
 pub struct AppState {
     pub fullscreen: bool,
-    pub prayertime: PrayerTime,
+    pub prayertime: PrayerTimes,
     pub input_map: input::InputMap,
     pub input_char: char,
     pub config: Config,
+    pub provider: Provider,
     pub timeset_data: TimeSetData,
     pub day_offset: i64,
     pub screen: Screen,
 }
+// Struct Provider
+// - Provider
+// - fn match provider => return PrayerTime struct
+
+#[derive(Debug)]
+pub enum Provider {
+    DataSet(TimeSetData),
+    Calculation(SalahCalcConfig),
+}
+impl Default for Provider {
+    fn default() -> Self {
+        Self::DataSet(TimeSetData::default())
+    }
+}
+impl Provider {
+    pub fn get_prayer_times(&self, date: NaiveDate) -> PrayerTimes {
+        match self {
+            Provider::DataSet(time_set_data) => {
+                time_set_data.data_from_day(date.ordinal0() as usize)
+            }
+            Provider::Calculation(salah_calc_config) => {
+                salah_calc_config.get_prayer_times(date)
+            }
+        }
+    }
+}
+
+
+impl AppState {
+    pub fn init_provider(&mut self) {
+        self.provider = match &self.config.provider {
+            ProviderConfig::Data(data) => {
+                let new_timeset = TimeSetData::load(data).unwrap(); // HACK: unwrap;
+                Provider::DataSet(new_timeset)
+            }
+            ProviderConfig::Calculation(calculation_config) => {
+                let method = calculation_config.method.to_runtime_config();
+                let madhab = calculation_config.madhab.to_runtime_config();
+                let coordinates = calculation_config.coordinates.to_runtime_config();
+                let salah_calc_config = SalahCalcConfig::new(method, madhab, coordinates);
+
+                Provider::Calculation(salah_calc_config)
+                
+            }
+
+        };
+        
+    }
+    pub fn get_prayer_times(&self) -> PrayerTimes{
+        let date: NaiveDate = self.get_offset_date();
+        self.provider.get_prayer_times(date)
+    }
+
+    pub fn get_offset_date(&self) -> chrono::NaiveDate {
+        chrono::offset::Utc::now().date_naive() + chrono::Duration::days(self.day_offset)
+    }
+}
+
 
 use serde::*;
 
-
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
-pub struct PrayerTime {
+pub struct PrayerTimes {
     pub index: u32,
     pub day: u32,
     pub fajr: u32,
@@ -38,9 +97,9 @@ pub struct PrayerTime {
     pub isha: u32,
 }
 
-impl PrayerTime {
-    pub fn from_vec(list:Vec<u32>) -> PrayerTime {
-        PrayerTime {
+impl PrayerTimes {
+    pub fn from_vec(list:Vec<u32>) -> PrayerTimes {
+        PrayerTimes {
             index: list[0],
             day:   list[1],
             fajr:  list[2],
@@ -83,15 +142,12 @@ impl PrayerTime {
         let time_list: Vec<u32> = self.to_vec();
         
         match config.display.format {
-            TimeFormat::Twelve => {
-                return time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2} {}",{if t.0 >13{t.0%12}else{t.0}},t.1, {if t.0 > 11{"PM"} else{"AM"} })).collect();
-            },
-            TimeFormat::TwentyFour => {
-                return time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2}",t.0,t.1)).collect();
-            },
-            TimeFormat::Minutes => {
-                return time_list.iter().map(|t| format!("{}",t)).collect();
-            },
+            TimeFormat::Twelve =>
+                time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2} {}",{if t.0 >12{t.0%12}else{t.0}},t.1, {if t.0 > 11{"PM"} else{"AM"} })).collect(),
+            TimeFormat::TwentyFour =>
+                time_list.iter().map(to_time).map(|t| format!("{:0>2}:{:0>2}",t.0,t.1)).collect(),
+            TimeFormat::Minutes =>
+                time_list.iter().map(|t| t.to_string()).collect(),
         }
     }
     
@@ -171,7 +227,7 @@ time_list[8],
 
 #[test]
 fn test_format() {
-    let value = PrayerTime { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let value = PrayerTimes { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
     let mut config = Config::default();
     
     config.display.format = TimeFormat::Twelve;
@@ -190,8 +246,8 @@ fn test_format() {
 
 #[test]
 fn test_prayertime() {
-    let expected = PrayerTime { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
-    let result = PrayerTime::from_vec(vec![77, 225, 293, 365, 736, 932, 1098, 1171]);
+    let expected = PrayerTimes { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let result = PrayerTimes::from_vec(vec![77, 225, 293, 365, 736, 932, 1098, 1171]);
     let result2 = TimeSetData::load("GDh. Vilingili").unwrap().data_from_day(225);
     assert_eq!(expected, result);
     assert_eq!(expected, result2);

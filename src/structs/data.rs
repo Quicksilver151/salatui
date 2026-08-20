@@ -1,8 +1,7 @@
 
 use chrono::Datelike;
 
-use crate::*;
-
+use crate::structs::*;
 
 /// General Data structs
 
@@ -49,19 +48,18 @@ impl TimeSetData {
         }    
     }
     
-    pub fn today_data(&self) -> PrayerTime {
+    pub fn today_data(&self) -> PrayerTimes {
         let current_time = chrono::offset::Local::now();
         let current_date = current_time.ordinal0() as usize;
         
-        PrayerTime::from_vec(self.data[current_date].clone())
+        PrayerTimes::from_vec(self.data[current_date].clone())
     }
     
-    pub fn data_from_day(&self, day: usize) -> PrayerTime {
-        PrayerTime::from_vec(self.data[day].to_owned())
+    pub fn data_from_day(&self, day: usize) -> PrayerTimes {
+        PrayerTimes::from_vec(self.data[day].to_owned())
     }
     
 }
-
 
 
 

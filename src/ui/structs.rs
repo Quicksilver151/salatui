@@ -58,7 +58,7 @@ impl UIState {
         self.footer.rect = rect;
     }
     
-    pub fn get_footer_line(&self) -> Line {
+    pub fn get_footer_line(&self) -> Line<'_> {
         let mut spans = vec![];
         for letters in self.footer.commands.iter() {
             spans.append(&mut vec![
@@ -76,11 +76,11 @@ impl UIState {
         Line::from(spans)
     }
 
-    pub fn get_header_line(&self) -> Line {
+    pub fn get_header_line(&self) -> Line<'_> {
         Line::from(self.header.text.to_owned())
     }
     
-    pub fn render_screen<B: Backend>(f: &mut Frame) {
+    pub fn render_screen<B: Backend>(_f: &mut Frame) {
         
     }
 }
