@@ -35,7 +35,6 @@ impl SalahCalcConfig {
         for prayer in prayer_times {
             let datetime: DateTime<Local> = DateTime::from(schedule.time(prayer));
             let hourtime = datetime.hour();
-            // if hourtime >= 4 {hourtime-=4} else {hourtime += 12-4} // HACK: TIMEZONE ADJSUTMENT
             let minute_offset = datetime.minute();
             let minutes = hourtime * 60 + minute_offset;
             
@@ -49,7 +48,7 @@ impl SalahCalcConfig {
     }
 
     pub fn get_prayer_times_now(self) -> structs::PrayerTimes {
-        let local_date = chrono::offset::Utc::now().naive_utc().date();
+        let local_date = chrono::offset::Local::now().date_naive();
         self.get_prayer_times(local_date)
     }
 }

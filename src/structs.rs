@@ -78,7 +78,7 @@ impl AppState {
     }
 
     pub fn get_offset_date(&self) -> chrono::NaiveDate {
-        chrono::offset::Utc::now().date_naive() + chrono::Duration::days(self.day_offset)
+        chrono::offset::Local::now().date_naive() + chrono::Duration::days(self.day_offset)
     }
 }
 
