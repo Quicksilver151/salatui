@@ -176,7 +176,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
                 _ => {},
             };
         }
-        
+
+        app_state.check_notifications();
+
         terminal.draw(|f| ui::<B>(f, app_state))?;
     }
 }

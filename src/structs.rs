@@ -12,6 +12,14 @@ use salah::{Datelike, NaiveDate};
 
 use crate::{salah_calc::SalahCalcConfig, Screen};
 
+const NOTIF_PRAYERS: [&str; 6] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+#[derive(Debug, Default)]
+pub struct NotifState {
+    pub day: Option<NaiveDate>,
+    pub fired: [bool; NOTIF_PRAYERS.len()],
+}
+
 #[derive(Debug, Default)]
 pub struct AppState {
     pub fullscreen: bool,
@@ -23,6 +31,7 @@ pub struct AppState {
     pub timeset_data: TimeSetData,
     pub day_offset: i64,
     pub screen: Screen,
+    pub notif: NotifState,
 }
 // Struct Provider
 // - Provider
@@ -79,6 +88,58 @@ impl AppState {
 
     pub fn get_offset_date(&self) -> chrono::NaiveDate {
         chrono::offset::Local::now().date_naive() + chrono::Duration::days(self.day_offset)
+    }
+
+    pub fn check_notifications(&mut self) {
+        if !self.config.notifications.enabled {
+            return;
+        }
+        let today = chrono::offset::Local::now().date_naive();
+        let now_min = local_now_minutes() as i64;
+        let offset = self.config.notifications.offset as i64;
+        let minutes = self.provider.get_prayer_times(today).to_vec();
+
+        let mut targets = [0i64; NOTIF_PRAYERS.len()];
+        for (target, minute) in targets.iter_mut().zip(minutes) {
+            *target = minute as i64 + offset;
+        }
+
+        if self.notif.day != Some(today) {
+            self.notif.day = Some(today);
+            self.notif.fired = [false; NOTIF_PRAYERS.len()];
+            for (i, target) in targets.iter().enumerate() {
+                if now_min >= *target {
+                    self.notif.fired[i] = true;
+                }
+            }
+        }
+
+        for i in due_notifications(now_min, targets, self.notif.fired) {
+            send_notification(NOTIF_PRAYERS[i]);
+            self.notif.fired[i] = true;
+        }
+    }
+}
+
+fn local_now_minutes() -> u32 {
+    use chrono::Timelike;
+    let now = chrono::offset::Local::now();
+    now.hour() * 60 + now.minute()
+}
+
+fn due_notifications(now_min: i64, targets: [i64; NOTIF_PRAYERS.len()], fired: [bool; NOTIF_PRAYERS.len()]) -> Vec<usize> {
+    (0..NOTIF_PRAYERS.len())
+        .filter(|&i| !fired[i] && now_min >= targets[i])
+        .collect()
+}
+
+fn send_notification(prayer: &str) {
+    if let Err(err) = notify_rust::Notification::new()
+        .summary("salatui")
+        .body(&format!("Time for {prayer}"))
+        .show()
+    {
+        eprintln!("notification failed: {err}");
     }
 }
 
@@ -242,6 +303,21 @@ fn test_format() {
 
     assert_eq!(expected, result);
     assert_eq!(expected2,result2);
+}
+
+#[test]
+fn test_due_notifications() {
+    let times = [293u32, 365, 736, 932, 1098, 1171];
+    let targets = |offset: i64| [
+        times[0] as i64 + offset, times[1] as i64 + offset, times[2] as i64 + offset,
+        times[3] as i64 + offset, times[4] as i64 + offset, times[5] as i64 + offset,
+    ];
+
+    assert_eq!(due_notifications(800, targets(0), [false; 6]), vec![0, 1, 2]);
+    assert_eq!(due_notifications(800, targets(0), [true, false, false, false, false, false]), vec![1, 2]);
+    assert_eq!(due_notifications(290, targets(-10), [false; 6]), vec![0]);
+    assert_eq!(due_notifications(290, targets(0), [false; 6]), Vec::<usize>::new());
+    assert_eq!(due_notifications(1300, targets(0), [false; 6]), vec![0, 1, 2, 3, 4, 5]);
 }
 
 #[test]

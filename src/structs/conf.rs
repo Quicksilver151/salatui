@@ -148,15 +148,12 @@ pub struct Display {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Notifications {
-    pub command: String,
+    pub enabled: bool,
     pub offset: i32, // minutes
 }
 impl Default for Notifications {
     fn default() -> Self {
-        let command:String = String::from("notify-send --urgency=critical");
-        let offset:i32 = 0;
-        
-        Notifications { command, offset }
+        Notifications { enabled: true, offset: 0 }
     }
 }
 
