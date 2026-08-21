@@ -112,9 +112,9 @@
 * TODO:
 
 - (-) [provider]
--- (x) built in salat-mv dataset
--- ( ) fix day 366 error (leap year)
--- ( ) calculation methods
+-- ( ) built in salat-mv dataset (was implemented in old salat_mv app, not ported to this version)
+-- (x) fix day 366 error (leap year)
+-- (x) calculation methods (salah crate backend)
 
 - (-) [display]
 -- ( ) calender
@@ -129,12 +129,14 @@
 -- (x) load/save data
 -- ( ) get started with ui
 
-- ( ) [notifs]
--- ( ) try to implement a universal notif (or give up and just use notify-send)
--- ( ) notif timer offset for each pt
+- (-) [notifs]
+-- (x) universal notif (notify-rust: linux dbus / windows / macos)
+-- (x) global notif offset (minutes, negative = early reminder)
+-- ( ) per-prayer offsets
+-- ( ) surface notification errors in ui (stderr is invisible under tui)
 
-- ( ) [general]
--- ( ) make a separate current datetime for display and notifs/internal logic
+- (-) [general]
+-- (x) make a separate current datetime for display and notifs/internal logic
 -- ( ) better input handling (currently inputmap is useless as input is used directly) (maybe use enum?)
 
 - ( ) [optimisations]

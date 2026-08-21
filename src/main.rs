@@ -20,7 +20,6 @@ pub use tui::{
 
 pub use serde::{Serialize, Deserialize};
 pub use directories::*;
-use chrono::*;
 pub use notify_rust::*;
 
 // mod files
@@ -36,13 +35,12 @@ pub use backends::*;
 
 fn output_data(config: &mut Config) {
     let current_time = chrono::offset::Local::now();
-    let current_day = current_time.ordinal0() as usize;
     
     match &config.provider {
         ProviderConfig::Data(name) => {
             let loaded = TimeSetData::load(name).unwrap();
             loop {
-                let today_data = loaded.data_from_day(current_day);
+                let today_data = loaded.data_from_day(loaded.day_index(current_time.date_naive()));
                 let today_data = today_data.output_format(config);
                 println!("{}",today_data);
                 if !config.raw_output.pool {

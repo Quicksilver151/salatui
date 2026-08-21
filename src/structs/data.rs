@@ -48,11 +48,17 @@ impl TimeSetData {
         }    
     }
     
+    pub fn day_index(&self, date: chrono::NaiveDate) -> usize {
+        let mut index = date.ordinal0() as usize;
+        if date.leap_year() && index > 59 {
+            index -= 1;
+        }
+        index.min(self.data.len().saturating_sub(1))
+    }
+
     pub fn today_data(&self) -> PrayerTimes {
-        let current_time = chrono::offset::Local::now();
-        let current_date = current_time.ordinal0() as usize;
-        
-        PrayerTimes::from_vec(self.data[current_date].clone())
+        let today = chrono::offset::Local::now().date_naive();
+        PrayerTimes::from_vec(self.data[self.day_index(today)].clone())
     }
     
     pub fn data_from_day(&self, day: usize) -> PrayerTimes {
@@ -172,6 +178,25 @@ impl Default for MVRawData {
 }
 
 
+
+#[test]
+fn test_day_index_leap_year() {
+    let dataset = TimeSetData {
+        name: String::new(),
+        details: None,
+        coordinates: (String::new(), String::new()),
+        data: vec![vec![0]; 365],
+    };
+    let date = |y, m, d| chrono::NaiveDate::from_ymd_opt(y, m, d).unwrap();
+
+    assert_eq!(dataset.day_index(date(2025, 1, 1)), 0);
+    assert_eq!(dataset.day_index(date(2025, 12, 31)), 364);
+    assert_eq!(dataset.day_index(date(2025, 3, 1)), 59);
+
+    assert_eq!(dataset.day_index(date(2024, 2, 28)), 58);
+    assert_eq!(dataset.day_index(date(2024, 3, 1)), 59);
+    assert_eq!(dataset.day_index(date(2024, 12, 31)), 364);
+}
 
 #[test]
 fn mv_data_parse(){

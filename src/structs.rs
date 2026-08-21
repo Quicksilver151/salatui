@@ -8,7 +8,7 @@ pub mod input;
 
 pub mod data;
 pub use data::*;
-use salah::{Datelike, NaiveDate};
+use salah::NaiveDate;
 
 use crate::{salah_calc::SalahCalcConfig, Screen};
 
@@ -51,7 +51,7 @@ impl Provider {
     pub fn get_prayer_times(&self, date: NaiveDate) -> PrayerTimes {
         match self {
             Provider::DataSet(time_set_data) => {
-                time_set_data.data_from_day(date.ordinal0() as usize)
+                time_set_data.data_from_day(time_set_data.day_index(date))
             }
             Provider::Calculation(salah_calc_config) => {
                 salah_calc_config.get_prayer_times(date)
