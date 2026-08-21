@@ -13,13 +13,9 @@
 
 ** Backends
    - mod.rs -> returns runtime data structs (stores data in respective format. parses to runtime format)
-   - salah calc
-   - salat-com.rs (Salat.com api and salat structs) 
-
-** Data
-   - mod.rs
-   - Config.rs (data)
-   - Local.rs (local data) 
+   - salah_calc.rs (prayer time calculation via salah crate)
+   - mv_dataset.rs (salat-mv dataset storage + csv parsing)
+   - salat_com.rs (salat.com website source, future)
 
 ** UI
    - mod.rs (choice structs, takes in choices and ui data, chooses correct ui and calls its method)
@@ -112,7 +108,7 @@
 * TODO:
 
 - (-) [provider]
--- ( ) built in salat-mv dataset (was implemented in old salat_mv app, not ported to this version)
+-- ( ) built in salat-mv dataset (runtime side ported to backends/mv_dataset.rs; csv -> stored dataset import pipeline missing)
 -- (x) fix day 366 error (leap year)
 -- (x) calculation methods (salah crate backend)
 

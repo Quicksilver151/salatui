@@ -6,11 +6,9 @@ pub use conf::*;
 pub mod input;
 // pub use input::*;
 
-pub mod data;
-pub use data::*;
 use salah::NaiveDate;
 
-use crate::{salah_calc::SalahCalcConfig, Screen};
+use crate::{mv_dataset::TimeSetData, salah_calc::SalahCalcConfig, Screen};
 
 const NOTIF_PRAYERS: [&str; 6] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
 

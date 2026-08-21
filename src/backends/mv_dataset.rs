@@ -1,7 +1,8 @@
 
 use chrono::Datelike;
+use serde::{Deserialize, Serialize};
 
-use crate::structs::*;
+use crate::structs::PrayerTimes;
 
 /// General Data structs
 
@@ -232,6 +233,4 @@ fn mv_data_parse(){
     // };
     assert_eq!(parsed, expected);
 }
-
-
 
