@@ -49,6 +49,19 @@ pub enum SettingsMode {
     #[default]
     Normal,
     TextInput { field: FieldId, buffer: String },
+    Popup { kind: PopupKind, cursor: usize, offset: usize, filter: String },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PopupKind {
+    Location,
+    Dataset,
+}
+
+#[derive(Debug)]
+pub enum PopupEntry {
+    City(&'static cities::City),
+    Dataset(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,6 +98,7 @@ pub enum FieldKind {
     Toggle,
     Cycle,
     Text { numeric: bool },
+    Pick(PopupKind),
 }
 
 #[derive(Debug)]
@@ -105,7 +119,7 @@ pub fn fields_for(category: usize, config: &Config) -> Vec<FieldRow> {
             match &config.provider {
                 ProviderConfig::Calculation(_) => rows.extend([
                     FieldRow { id: FieldId::ProviderName, label: "name", kind: FieldKind::Text { numeric: false } },
-                    FieldRow { id: FieldId::ProviderLocation, label: "location", kind: FieldKind::Text { numeric: false } },
+                    FieldRow { id: FieldId::ProviderLocation, label: "location", kind: FieldKind::Pick(PopupKind::Location) },
                     FieldRow { id: FieldId::ProviderMethod, label: "method", kind: FieldKind::Cycle },
                     FieldRow { id: FieldId::ProviderMadhab, label: "madhab", kind: FieldKind::Cycle },
                     FieldRow { id: FieldId::ProviderLatitude, label: "latitude", kind: FieldKind::Text { numeric: true } },
@@ -114,7 +128,7 @@ pub fn fields_for(category: usize, config: &Config) -> Vec<FieldRow> {
                 ProviderConfig::Data(_) => rows.extend([FieldRow {
                     id: FieldId::DatasetName,
                     label: "dataset",
-                    kind: FieldKind::Text { numeric: false },
+                    kind: FieldKind::Pick(PopupKind::Dataset),
                 }]),
             }
             rows
@@ -355,6 +369,34 @@ fn method_name(method: &Method) -> &'static str {
     }
 }
 
+pub fn popup_entries(kind: PopupKind, filter: &str) -> Vec<PopupEntry> {
+    let needle = filter.trim().to_lowercase();
+    match kind {
+        PopupKind::Location => cities::all()
+            .iter()
+            .filter(|c| {
+                needle.is_empty()
+                    || c.city.to_lowercase().contains(&needle)
+                    || c.country.to_lowercase().contains(&needle)
+            })
+            .map(PopupEntry::City)
+            .collect(),
+        PopupKind::Dataset => TimeSetData::list()
+            .into_iter()
+            .filter(|n| needle.is_empty() || n.to_lowercase().contains(&needle))
+            .map(PopupEntry::Dataset)
+            .collect(),
+    }
+}
+
+pub fn apply_city(config: &mut Config, city: &cities::City) {
+    if let Some(c) = FieldId::calc_mut(config) {
+        c.location = format!("{}, {}", city.city, city.country);
+        c.coordinates.latitude = city.latitude;
+        c.coordinates.longitude = city.longitude;
+    }
+}
+
 #[test]
 fn test_fields_for_counts() {
     let config = Config::default();
@@ -425,4 +467,51 @@ fn test_censor_flags() {
     assert!(FieldId::ProviderLongitude.censored());
     assert!(!FieldId::ProviderName.censored());
     assert!(!FieldId::NotifOffset.censored());
+}
+
+#[test]
+fn test_pick_rows() {
+    let config = Config::default();
+    let rows = fields_for(0, &config);
+    assert!(matches!(rows[2].kind, FieldKind::Pick(PopupKind::Location)));
+
+    let data_config = Config {
+        provider: ProviderConfig::Data(String::new()),
+        ..Config::default()
+    };
+    let rows = fields_for(0, &data_config);
+    assert!(matches!(rows[1].kind, FieldKind::Pick(PopupKind::Dataset)));
+}
+
+#[test]
+fn test_popup_filter() {
+    assert_eq!(popup_entries(PopupKind::Location, "").len(), cities::all().len());
+
+    let hits = popup_entries(PopupKind::Location, "LONDON");
+    assert!(!hits.is_empty());
+    assert!(hits.iter().all(|e| matches!(
+        e,
+        PopupEntry::City(c)
+            if c.city.to_lowercase().contains("london") || c.country.to_lowercase().contains("london")
+    )));
+
+    assert!(popup_entries(PopupKind::Dataset, "anything").is_empty());
+}
+
+#[test]
+fn test_apply_city() {
+    let Some(PopupEntry::City(city)) = popup_entries(PopupKind::Location, "london").into_iter().next() else {
+        panic!("london should exist in embedded cities");
+    };
+
+    let mut config = Config::default();
+    apply_city(&mut config, city);
+    match &config.provider {
+        ProviderConfig::Calculation(c) => {
+            assert_eq!(c.location, format!("{}, {}", city.city, city.country));
+            assert_eq!(c.coordinates.latitude, city.latitude);
+            assert_eq!(c.coordinates.longitude, city.longitude);
+        }
+        ProviderConfig::Data(_) => panic!("provider should stay calculation"),
+    }
 }

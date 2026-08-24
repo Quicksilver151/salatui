@@ -20,7 +20,23 @@ pub struct TimeSetData {
     pub data: Vec<Vec<u32>>,
 }
 impl TimeSetData {
-    
+
+    pub fn list() -> Vec<String> {
+        let Some(dirs) = directories::ProjectDirs::from("", "", "salatui") else {
+            return Vec::new();
+        };
+        let Ok(entries) = std::fs::read_dir(dirs.data_dir()) else {
+            return Vec::new();
+        };
+        let mut names: Vec<String> = entries
+            .flatten()
+            .filter(|e| e.path().is_file())
+            .filter_map(|e| e.file_name().into_string().ok())
+            .collect();
+        names.sort();
+        names
+    }
+
     pub fn load(name: &str) -> Result<TimeSetData, confy::ConfyError> {
         let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
         let mut data_path = dirs.data_dir().to_path_buf();

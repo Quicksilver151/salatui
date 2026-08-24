@@ -15,7 +15,7 @@ pub use tui::{
     style::{Color, Style},
     symbols::*,
     text::Line,
-    widgets::{Block, Borders, BorderType, List, ListItem, ListState, Paragraph, Tabs},
+    widgets::{Block, Borders, BorderType, Clear, List, ListItem, ListState, Paragraph, Tabs},
 };
 
 pub use serde::{Serialize, Deserialize};

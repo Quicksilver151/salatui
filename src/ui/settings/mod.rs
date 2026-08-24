@@ -24,6 +24,12 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
             ["enter", " commit"],
             ["esc", " cancel"],
         ],
+        SettingsMode::Popup { .. } => vec![
+            ["↑↓", " select"],
+            ["type", " filter"],
+            ["enter", " apply"],
+            ["esc", " cancel"],
+        ],
     });
 
     let area = ui_state.get_screen_rect();
@@ -72,7 +78,7 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
 
     let editing = match &app_state.settings.mode {
         SettingsMode::TextInput { field, buffer } => Some((*field, buffer.clone())),
-        SettingsMode::Normal => None,
+        SettingsMode::Normal | SettingsMode::Popup { .. } => None,
     };
 
     let start = app_state.settings.offset.min(fields.len());
@@ -94,7 +100,7 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
                     if value == "true" { "x" } else { " " }
                 ),
                 FieldKind::Cycle => format!("{:<LABEL_WIDTH$}‹ {} ›", row.label, value),
-                FieldKind::Text { .. } => format!("{:<LABEL_WIDTH$}{}", row.label, value),
+                FieldKind::Text { .. } | FieldKind::Pick(_) => format!("{:<LABEL_WIDTH$}{}", row.label, value),
             };
             let style = if selected {
                 Style::default().add_modifier(Modifier::REVERSED)
@@ -107,6 +113,84 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
 
     let field_list = List::new(items).block(new_color_block("", Color::Green));
     f.render_widget(field_list, right[2]);
+
+    if let SettingsMode::Popup { kind, cursor, offset, filter } = &app_state.settings.mode {
+        draw_popup(f, area, *kind, *cursor, *offset, filter);
+    }
+}
+
+fn draw_popup(f: &mut Frame, area: Rect, kind: PopupKind, cursor: usize, mut offset: usize, filter: &str) {
+    let entries = popup_entries(kind, filter);
+
+    let popup = centered_rect(area, 60, 16);
+    f.render_widget(Clear, popup);
+
+    let title = match kind {
+        PopupKind::Location => format!("select location [{}/{}]", entries.len(), cities::all().len()),
+        PopupKind::Dataset => format!("select dataset [{}]", entries.len()),
+    };
+
+    let inner = shrink(popup);
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(1)])
+        .split(inner);
+    let filter_line = Paragraph::new(if filter.is_empty() { " ".to_string() } else { format!("filter: {filter}") })
+        .style(Style::default().fg(Color::DarkGray));
+    f.render_widget(filter_line, rows[0]);
+
+    let visible = rows[1].height as usize;
+    if cursor < offset {
+        offset = cursor;
+    }
+    if cursor >= offset + visible.max(1) {
+        offset = cursor + 1 - visible.max(1);
+    }
+
+    let start = offset.min(entries.len());
+    let items: Vec<ListItem> = entries[start..]
+        .iter()
+        .enumerate()
+        .map(|(vis, entry)| {
+            let selected = start + vis == cursor;
+            let style = if selected {
+                Style::default().add_modifier(Modifier::REVERSED)
+            } else {
+                Style::default()
+            };
+            ListItem::new(popup_label(entry)).style(style)
+        })
+        .collect();
+
+    let list = List::new(items).block(new_color_block(&title, Color::Cyan));
+    f.render_widget(list, rows[1]);
+}
+
+fn centered_rect(area: Rect, percent_x: u16, max_h: u16) -> Rect {
+    let height = max_h.min(area.height.saturating_sub(2)).max(5);
+    let width = (area.width * percent_x / 100).clamp(24, area.width);
+    Rect {
+        x: area.x + area.width.saturating_sub(width) / 2,
+        y: area.y + area.height.saturating_sub(height) / 2,
+        width,
+        height,
+    }
+}
+
+fn shrink(rect: Rect) -> Rect {
+    Rect {
+        x: rect.x.saturating_add(1),
+        y: rect.y.saturating_add(1),
+        width: rect.width.saturating_sub(2),
+        height: rect.height.saturating_sub(2),
+    }
+}
+
+fn popup_label(entry: &PopupEntry) -> String {
+    match entry {
+        PopupEntry::City(c) => format!("{} ({}) [{:.4}, {:.4}]", c.city, c.country, c.latitude, c.longitude),
+        PopupEntry::Dataset(name) => name.clone(),
+    }
 }
 
 fn adjust_scroll(state: &mut SettingsState, len: usize, visible: usize) {
@@ -128,6 +212,8 @@ pub fn handle_settings_key(app_state: &mut AppState) -> bool {
         .unwrap_or((Key::None, crate::structs::input::Modifier::None));
     if matches!(app_state.settings.mode, SettingsMode::TextInput { .. }) {
         handle_text_key(app_state, key.0);
+    } else if matches!(app_state.settings.mode, SettingsMode::Popup { .. }) {
+        handle_popup_key(app_state, key);
     } else {
         handle_normal_key(app_state, key);
     }
@@ -184,6 +270,7 @@ fn edit_current(app_state: &mut AppState, delta: isize) {
             row.id.step(&mut app_state.config, delta);
             after_change(app_state, false);
         }
+        FieldKind::Pick(_) => {}
         _ => {}
     }
 }
@@ -198,6 +285,7 @@ fn activate_current(app_state: &mut AppState) {
             after_change(app_state, false);
         }
         FieldKind::Cycle => edit_current(app_state, 1),
+        FieldKind::Pick(kind) => open_picker(app_state, kind),
         FieldKind::Text { .. } => {
             let buffer = row.id.value_str(&app_state.config);
             app_state.settings.mode = SettingsMode::TextInput {
@@ -206,6 +294,97 @@ fn activate_current(app_state: &mut AppState) {
             };
         }
     }
+}
+
+fn open_picker(app_state: &mut AppState, kind: PopupKind) {
+    if kind == PopupKind::Dataset && TimeSetData::list().is_empty() {
+        app_state.message = Some("no stored datasets in data directory".to_string());
+        return;
+    }
+    app_state.settings.mode = SettingsMode::Popup {
+        kind,
+        cursor: 0,
+        offset: 0,
+        filter: String::new(),
+    };
+}
+
+fn store_popup(app_state: &mut AppState, kind: PopupKind, cursor: usize, offset: usize, filter: String) {
+    app_state.settings.mode = SettingsMode::Popup {
+        kind,
+        cursor,
+        offset,
+        filter,
+    };
+}
+
+fn handle_popup_key(app_state: &mut AppState, (key, modifier): (Key, crate::structs::input::Modifier)) {
+    let step = match modifier {
+        crate::structs::input::Modifier::Shift => 10,
+        _ => 1,
+    };
+    let taken = std::mem::take(&mut app_state.settings.mode);
+    let SettingsMode::Popup { kind, cursor, offset, filter } = taken else {
+        return;
+    };
+    let len = popup_entries(kind, &filter).len();
+    match key {
+        Key::Up => store_popup(app_state, kind, cursor.saturating_sub(step).min(len.saturating_sub(1)), offset, filter),
+        Key::Down if len > 0 => store_popup(app_state, kind, (cursor + step).min(len - 1), offset, filter),
+        Key::Enter => apply_popup(app_state, kind, cursor, offset, filter),
+        Key::Escape | Key::Config => app_state.settings.mode = SettingsMode::Normal,
+        Key::Backspace => {
+            let mut next = filter;
+            next.pop();
+            store_popup(app_state, kind, 0, 0, next);
+        }
+        _ => {
+            if let Some(c) = app_state.input_map.get_raw_char() {
+                let mut next = filter;
+                next.push(c);
+                store_popup(app_state, kind, 0, 0, next);
+            } else {
+                store_popup(app_state, kind, cursor, offset, filter);
+            }
+        }
+    }
+}
+
+fn apply_popup(app_state: &mut AppState, kind: PopupKind, cursor: usize, offset: usize, filter: String) {
+    let selected = popup_entries(kind, &filter)
+        .get(cursor)
+        .map(|entry| match entry {
+            PopupEntry::City(city) => (Some(*city), None),
+            PopupEntry::Dataset(name) => (None, Some(name.clone())),
+        });
+    let Some((city, dataset)) = selected else {
+        store_popup(app_state, kind, cursor, offset, filter);
+        return;
+    };
+
+    if let Some(city) = city {
+        apply_city(&mut app_state.config, city);
+        app_state.settings.mode = SettingsMode::Normal;
+        after_change(app_state, true);
+        return;
+    }
+
+    let Some(name) = dataset else {
+        return;
+    };
+    if TimeSetData::load(&name).is_err() {
+        app_state.message = Some("dataset not found in data directory".to_string());
+        store_popup(app_state, kind, cursor, offset, filter);
+        return;
+    }
+    if let ProviderConfig::Data(current) = &app_state.config.provider {
+        app_state.settings.data_cache = Some(current.clone());
+    }
+    app_state.config.provider = ProviderConfig::Data(name);
+    let len = fields_for(0, &app_state.config).len();
+    app_state.settings.cursor = app_state.settings.cursor.min(len.saturating_sub(1));
+    app_state.settings.mode = SettingsMode::Normal;
+    after_change(app_state, true);
 }
 
 fn handle_text_key(app_state: &mut AppState, key: Key) {

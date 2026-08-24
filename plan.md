@@ -49,7 +49,7 @@ A TUI application to show and manage islamic prayer times.
 - [x] load/save config
 - [x] load/save data
 - [x] settings window phase 1 (two-pane editor; all 4 sections; toggle/cycle/text editing; coords censored until edited; autosave + live provider reload)
-- [ ] settings window phase 2 (popups: location picker w/ embedded city list, dataset picker)
+- [x] settings window phase 2 (popups: location picker over `cities` crate's 10k embedded world cities w/ live filter, dataset picker over stored datasets; picking a city sets name + coordinates)
 
 ### notifs
 - [x] universal notif (notify-rust: linux dbus / windows / macos)
