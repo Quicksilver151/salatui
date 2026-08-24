@@ -1,0 +1,221 @@
+
+use chrono::Datelike;
+use serde::{Deserialize, Serialize};
+
+use crate::structs::PrayerTimes;
+
+pub const DEFAULT_MV_ISLAND_INDEX: usize = 102;
+pub const DEFAULT_MV_TIMESET_INDEX: usize = 57;
+pub const DEFAULT_MV_ATOLL_NAME: &str = "AA";
+pub const DEFAULT_MV_ISLAND_NAME: &str = "Male'";
+pub const DEFAULT_MV_COORDINATES: (&str, &str) = ("4.17503", "73.509878");
+
+/// General Data structs
+
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimeSetData {
+    pub name: String,
+    pub details: Option<String>,
+    pub coordinates: (String, String),
+    pub data: Vec<Vec<u32>>,
+}
+impl TimeSetData {
+    
+    pub fn load(name: &str) -> Result<TimeSetData, confy::ConfyError> {
+        let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
+        let mut data_path = dirs.data_dir().to_path_buf();
+        data_path.push(name);
+        
+        if std::path::Path::exists(&data_path) {
+            let data = confy::load_path(data_path)?;
+            Ok(data)
+        }else{
+            let err_path = data_path.to_str().unwrap().to_string();
+            Err(confy::ConfyError::BadConfigDirectory(err_path))
+        }
+    }
+    
+    pub fn save(&self, name: &str) -> Result<(), confy::ConfyError>{
+        let dirs = directories::ProjectDirs::from("", "", "salatui").unwrap();
+        let mut data_path = dirs.data_dir().to_path_buf();
+        
+        if std::path::Path::exists(&data_path) {
+            data_path.push(name);
+            confy::store_path(&data_path, self)?;
+            Ok(())
+            
+        } else {
+            match std::fs::create_dir(&data_path) {
+                Ok(_) => println!("no data directory exists. creating"),
+                Err(err) => println!("failed to create directory\n{err}"),
+            };
+            data_path.push(name);
+            confy::store_path(&data_path, self)?;
+            Ok(())
+        }    
+    }
+    
+    pub fn day_index(&self, date: chrono::NaiveDate) -> usize {
+        let mut index = date.ordinal0() as usize;
+        if date.leap_year() && index > 59 {
+            index -= 1;
+        }
+        index.min(self.data.len().saturating_sub(1))
+    }
+
+    pub fn today_data(&self) -> PrayerTimes {
+        let today = chrono::offset::Local::now().date_naive();
+        PrayerTimes::from_vec(self.data[self.day_index(today)].clone())
+    }
+    
+    pub fn data_from_day(&self, day: usize) -> PrayerTimes {
+        PrayerTimes::from_vec(self.data[day].to_owned())
+    }
+    
+}
+
+
+
+// ===================
+/// Built-in support:
+// ===================
+
+// data parsed during build time
+// include!(concat!(env!("OUT_DIR"), "/parsed_data.rs")); // build script output
+// might try this if optimisation is required, for now gonna focus on finishing the main program
+// #[derive(Debug, PartialEq, Eq)]
+// pub struct MVData<'a> {
+//     pub pt:     [[u32    ; 8]; 15372],
+//     pub island: [[&'a str;10];   205],
+//     pub atoll:  [[&'a str; 4];    20],
+// }
+// impl<'a> MVData<'a> {
+//     pub fn from(pt: [[u32; 8]; 15372], island: [[&'a str;10]; 205], atoll:[[&'a str; 4];20]) -> Self{
+//         MVData {pt,  island, atoll}
+//     }
+//     pub fn parse_timeset(&self, island_index: usize) -> Option<TimeSet> {
+//         todo!()
+//     }
+// }
+
+#[derive(Debug, PartialEq, Eq)]
+/// Salatmv string dataset struct
+pub struct MVRawData {
+    /// atoll[x]  => 0:index, 1:eng_name, 2:dhi_name, 3:ar_name
+    pub atoll: String,
+    /// island[x]  => 0:timeset_index, 1:island_index, 2:atoll_index, 3:eng_name, 4:dhi_name,
+    /// 5:ar_name, 6:unknown, 7:latitude, 8:longitude, 9:unknown
+    pub island: String,
+    /// pt[x] => 0:timeset_index, 1:day, 2:fajr, 3:sun, 4:duhur, 5:asr, 6:magrib, 7:isha
+    pub pt: String,
+}
+
+impl MVRawData {
+    pub fn from(pt: String, atoll: String, island: String) -> MVRawData {
+        MVRawData {pt, atoll, island}
+    }
+    
+    pub fn parse_to_timeset(&self, island_index: usize) -> Option<TimeSetData> {
+        if self.pt.is_empty(){
+            return None
+        };
+        
+        // Island
+        let island_data:Vec<String> = {
+            let mut rows:Vec<String> = self.island.split('\n').map(str::to_string).collect();
+            rows.pop();
+            let table:Vec<Vec<String>> = rows.into_iter().map(|column| column.split(';').map(str::to_string).collect()).collect();
+            
+            table.into_iter()
+                .filter(|column| column[1] == island_index.to_string())
+                .flatten()
+                .collect()
+        };
+        let island_name = island_data[3].to_string();
+        
+        // Atoll
+        let atoll_index:usize = island_data[2].parse().unwrap();
+        let atoll_data: Vec<Vec<&str>> = {
+            let mut rows:Vec<&str> = self.atoll.split('\n').collect();
+            rows.pop();
+            
+            rows.into_iter()
+                .map(|column| column.split(';').collect())
+                .collect()
+        };
+        let atoll_name = atoll_data[atoll_index][1].to_string();
+        
+        // PT
+        let timeset_index = island_data[0].clone();
+        let pt_data:Vec<Vec<u32>> = { 
+            let mut rows: Vec<&str> = self.pt.split('\n').collect();
+            rows.pop();
+            let table: Vec<Vec<&str>> = rows.into_iter().map(|column| column.split(';').collect()).collect();
+            
+            table.into_iter()
+                .filter(|column| column[0] == timeset_index)
+                .map(|column| column.into_iter().map(|e| e.parse::<u32>().unwrap_or(444000444)).collect())
+                .collect()
+        };
+        
+        let name = format!("{atoll_name}. {island_name}");
+        let details = None;
+        let coordinates = (island_data[7].to_string(), island_data[8].to_string());
+        
+        let data = pt_data;
+        
+        Some(TimeSetData{name, details, coordinates, data})
+    }
+}
+impl Default for MVRawData {
+    fn default() -> Self {
+        use std::fs;
+        
+        let atoll = fs::read_to_string("./data/atolls.csv")
+            .expect("Should have been able to read the file");
+        
+        let pt = fs::read_to_string("./data/ptdata.csv")
+            .expect("Should have been able to read the file");
+        
+        let island = fs::read_to_string("./data/islands.csv")
+            .expect("Should have been able to read the file");
+        
+        MVRawData::from(pt, atoll, island)
+    }
+}
+
+
+
+#[test]
+fn test_day_index_leap_year() {
+    let dataset = TimeSetData {
+        name: String::new(),
+        details: None,
+        coordinates: (String::new(), String::new()),
+        data: vec![vec![0]; 365],
+    };
+    let date = |y, m, d| chrono::NaiveDate::from_ymd_opt(y, m, d).unwrap();
+
+    assert_eq!(dataset.day_index(date(2025, 1, 1)), 0);
+    assert_eq!(dataset.day_index(date(2025, 12, 31)), 364);
+    assert_eq!(dataset.day_index(date(2025, 3, 1)), 59);
+
+    assert_eq!(dataset.day_index(date(2024, 2, 28)), 58);
+    assert_eq!(dataset.day_index(date(2024, 3, 1)), 59);
+    assert_eq!(dataset.day_index(date(2024, 12, 31)), 364);
+}
+
+#[test]
+fn mv_data_parse(){
+    let parsed = MVRawData::default()
+        .parse_to_timeset(DEFAULT_MV_ISLAND_INDEX);
+    let Some(parsed) = parsed else {
+        panic!("parsing data")
+    };
+
+    assert_eq!(parsed.name, format!("{DEFAULT_MV_ATOLL_NAME}. {DEFAULT_MV_ISLAND_NAME}"));
+    assert_eq!(parsed.coordinates, (DEFAULT_MV_COORDINATES.0.to_string(), DEFAULT_MV_COORDINATES.1.to_string()));
+    assert_eq!(parsed.data[0][0], DEFAULT_MV_TIMESET_INDEX as u32);
+    assert!(!parsed.data.is_empty());
+}
+

@@ -1,0 +1,197 @@
+use std::time::Duration;
+
+// crates
+pub use crossterm::{event, execute, terminal};
+
+pub use event::{KeyCode, KeyModifiers, EnableMouseCapture, DisableMouseCapture, Event};
+pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
+// pub use arboard::*;
+pub use clap::Parser;
+pub use tui::{
+    Terminal,
+    Frame,
+    backend::{CrosstermBackend, Backend},
+    layout::Alignment,
+    style::{Color, Style},
+    symbols::*,
+    text::Line,
+    widgets::{Block, Borders, BorderType, List, ListItem, ListState, Paragraph, Tabs},
+};
+
+pub use serde::{Serialize, Deserialize};
+pub use directories::*;
+pub use notify_rust::*;
+
+// mod files
+mod structs;
+mod ui;
+mod parsers;
+mod backends;
+
+pub use structs::*;
+pub use ui::*;
+pub use parsers::*;
+pub use backends::*;
+
+use crate::mv_dataset::TimeSetData;
+
+fn output_data(config: &mut Config) {
+    let current_time = chrono::offset::Local::now();
+    
+    match &config.provider {
+        ProviderConfig::Data(name) => {
+            let loaded = TimeSetData::load(name).unwrap();
+            loop {
+                let today_data = loaded.data_from_day(loaded.day_index(current_time.date_naive()));
+                let today_data = today_data.output_format(config);
+                println!("{}",today_data);
+                if !config.raw_output.pool {
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+            // let today_dataset = PrayerTime::from_vec(loaded.data[current_date].clone());
+        },
+        
+        ProviderConfig::Calculation(_) =>{},
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    
+    // Notification::new()
+    //     .summary("Asr")
+    //     .body("Adan")
+    //     .auto_icon()
+    //     .appname("salatui")
+    //     .hint(Hint::Urgency(Urgency::Normal))
+    //     .timeout(Timeout::Never)
+    //     .show().unwrap();
+    
+    
+    
+    // init config
+    // Config::init();
+    let args = Args::parse();
+
+    let mut config: Config = match args.config {
+        Some(config_path) => Config::load_from_path(config_path),
+        None => Config::load(),
+    };
+
+    // config.save().unwrap();
+    
+    // init timeset
+    // let timeset_data: TimeSetData = match &config.provider {
+    //     ProviderConfig::Data(name) => TimeSetData::load(name).unwrap(),
+    //     _ => todo!(),
+    // };
+    
+    if args.output {
+        output_data(&mut config);
+        // salat_times(&mut conf, timeset);
+        return Ok(());
+    }
+    
+    // init terminal
+    enable_raw_mode()?;
+    execute!(
+        std::io::stdout(),
+        EnterAlternateScreen,
+        EnableMouseCapture
+    )?;
+    
+    
+    // init tui
+    let backend = CrosstermBackend::new(std::io::stdout());
+    let mut terminal = Terminal::new(backend)?;
+    let mut app_state: AppState = AppState{config, ..Default::default()};
+    app_state.fullscreen = app_state.config.display.fullscreen;
+    app_state.init_provider();
+    // main
+    let result = run_app(&mut terminal, &mut app_state);
+    
+    // end
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture,
+    )?;
+    if let Err(e) = result {
+        println!("{}", e);
+    }
+    
+    Ok(())
+}
+
+
+// APPLICATION
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> Result<(), std::io::Error> {
+    
+    terminal.draw(|f| ui::<B>(f, app_state))?;
+    loop {
+        // InputMap
+        app_state.input_map.reset();
+        app_state.input_char = char::default();
+        if event::poll(Duration::from_millis(1000))?
+            && let Event::Key(key) = event::read()?
+        {
+            app_state.input_map.map_inputs(key);
+            if let Some(c) = app_state.input_map.get_raw_char() {
+                app_state.input_char = c;
+            }
+        }
+        // dbg!(&input_map);
+        
+        // =====
+        // Logic
+        // =====
+        use input::*;
+        match app_state.screen {
+            Screen::Settings => {
+                handle_settings_key(app_state);
+            }
+            Screen::Menu => {
+                if let Some(key) = app_state.input_map.get_key() {
+                    match key {
+                        (Key::Right,  Modifier::Shift) => app_state.day_offset += 30,
+                        (Key::Left,   Modifier::Shift) => app_state.day_offset -= 30,
+                        (Key::Right,  _              ) => app_state.day_offset += 1,
+                        (Key::Left,   _              ) => app_state.day_offset -= 1,
+                        (Key::Escape, _              ) => app_state.day_offset  = 0,
+                        (Key::Config, _              ) => app_state.screen = Screen::Settings,
+                        _ => {},
+                    };
+                }
+            },
+            _ => {},
+        }
+        
+        let settings_busy = app_state.screen == Screen::Settings
+            && !matches!(app_state.settings.mode, SettingsMode::Normal);
+        if !settings_busy {
+            let command = app_state.input_map.get_command();
+            if let Some(command) = command {
+                match command {
+                    'f' => app_state.fullscreen = !app_state.fullscreen,
+                    'q' => return Ok(()),
+                     _  => {},
+                };
+            };
+        }
+
+        app_state.check_notifications();
+
+        terminal.draw(|f| ui::<B>(f, app_state))?;
+    }
+}
+
+
+
+
+
+
+
+
+
