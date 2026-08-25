@@ -1,6 +1,7 @@
 use std::fs::{write, read_to_string};
 use std::env;
 use std::path::Path;
+use std::collections::HashMap;
 
 trait PTDataParse {
     fn parse_for_island(self) -> Vec<Vec<u32>>;
@@ -87,6 +88,46 @@ fn format_as_rust_array(pt_data:Vec<Vec<u32>>) -> String{
     
 }
 
+fn escape(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+/// join GeoNames cities15000 with countryInfo names;
+/// emit rows of [name, country, latitude, longitude], sorted by country then city
+fn format_cities(cities_tsv: &str, country_tsv: &str) -> String {
+    let mut countries: HashMap<&str, &str> = HashMap::new();
+    for line in country_tsv.lines().filter(|l| !l.starts_with('#')) {
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() > 4 {
+            countries.insert(cols[0], cols[4]);
+        }
+    }
+
+    let mut rows: Vec<(&str, &str, &str, &str)> = cities_tsv
+        .lines()
+        .filter_map(|line| {
+            // 0:geonameid 1:name 2:asciiname 3:alternatenames 4:lat 5:lon ... 8:country code
+            let cols: Vec<&str> = line.split('\t').collect();
+            if cols.len() < 9 {
+                return None;
+            }
+            let country = *countries.get(cols[8])?;
+            Some((country, cols[2], cols[4], cols[5]))
+        })
+        .collect();
+    rows.sort();
+
+    let mut out = String::from("pub static CITIES : & [[&str; 4]] = &[");
+    for (country, city, lat, lon) in rows {
+        out.push_str(&format!(
+            "\n[\"{}\", \"{}\", \"{}\", \"{}\"],",
+            escape(city), escape(country), lat, lon
+        ));
+    }
+    out.push_str("];");
+    out
+}
+
 #[allow(unused)]
 fn main(){
     let data : &str = include_str!("./data/ptdata.csv");
@@ -100,9 +141,16 @@ fn main(){
     let final_string = format!("{}\n\n{}", atoll_and_island_data, pt_data);
     
     let out_dir = env::var_os("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("parsed_data.rs");
+    let dest_path = Path::new(&out_dir).join("salatmv.rs");
     
     write(dest_path, final_string).unwrap_or(());
+
+    // world cities for the location picker
+    let cities_string = format_cities(
+        &read_to_string("./data/cities15000.txt").unwrap(),
+        &read_to_string("./data/countryInfo.txt").unwrap(),
+    );
+    write(Path::new(&out_dir).join("geonames.rs"), cities_string).unwrap_or(());
     
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=data")

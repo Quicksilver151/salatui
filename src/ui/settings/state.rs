@@ -64,8 +64,15 @@ pub enum PopupKind {
 
 #[derive(Debug)]
 pub enum PopupEntry {
-    City(&'static cities::City),
+    City(&'static [&'static str; 4]),
     Island(String),
+}
+
+/// case-insensitive subsequence match ("ml'" finds "Male'")
+fn fuzzy(haystack: &str, needle: &str) -> bool {
+    let hay = haystack.to_lowercase();
+    let mut hay = hay.chars();
+    needle.to_lowercase().chars().all(|n| hay.any(|c| c == n))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -327,27 +334,23 @@ fn method_name(method: &Method) -> &'static str {
 pub fn popup_entries(kind: PopupKind, filter: &str) -> Vec<PopupEntry> {
     let needle = filter.trim().to_lowercase();
     match kind {
-        PopupKind::Location => cities::all()
+        PopupKind::Location => CITIES
             .iter()
-            .filter(|c| {
-                needle.is_empty()
-                    || c.city.to_lowercase().contains(&needle)
-                    || c.country.to_lowercase().contains(&needle)
-            })
+            .filter(|c| needle.is_empty() || fuzzy(c[0], &needle) || fuzzy(c[1], &needle))
             .map(PopupEntry::City)
             .collect(),
         PopupKind::Island => island_keys()
             .into_iter()
-            .filter(|n| needle.is_empty() || n.to_lowercase().contains(&needle))
+            .filter(|n| needle.is_empty() || fuzzy(n, &needle))
             .map(PopupEntry::Island)
             .collect(),
     }
 }
 
-pub fn apply_city(config: &mut Config, city: &cities::City) {
-    config.calculation.location = format!("{}, {}", city.city, city.country);
-    config.coordinates.latitude = city.latitude;
-    config.coordinates.longitude = city.longitude;
+pub fn apply_city(config: &mut Config, city: &'static [&'static str; 4]) {
+    config.calculation.location = format!("{}, {}", city[0], city[1]);
+    config.coordinates.latitude = city[2].parse().unwrap_or_default();
+    config.coordinates.longitude = city[3].parse().unwrap_or_default();
 }
 
 #[test]
@@ -431,15 +434,45 @@ fn test_pick_rows() {
 }
 
 #[test]
-fn test_popup_filter() {
-    assert_eq!(popup_entries(PopupKind::Location, "").len(), cities::all().len());
+fn test_fuzzy_matcher() {
+    // subsequence: chars in order
+    assert!(fuzzy("Male'", "ml'"));
+    assert!(fuzzy("Makkah", "mkh"));
+    assert!(fuzzy("Saudi Arabia", "saudiarabia"));
+    assert!(fuzzy("London", "LON"));
+    // order matters
+    assert!(!fuzzy("Oman", "am"));
+    // missing char fails
+    assert!(!fuzzy("Male'", "malex"));
+}
 
-    let hits = popup_entries(PopupKind::Location, "LONDON");
+#[test]
+fn test_popup_filter() {
+    assert_eq!(popup_entries(PopupKind::Location, "").len(), CITIES.len());
+
+    let hits = popup_entries(PopupKind::Location, "london");
     assert!(!hits.is_empty());
     assert!(hits.iter().all(|e| matches!(
         e,
         PopupEntry::City(c)
-            if c.city.to_lowercase().contains("london") || c.country.to_lowercase().contains("london")
+            if fuzzy(c[0], "london") || fuzzy(c[1], "london")
+    )));
+
+    // countries missing from the old cities crate are now available;
+    // fuzzy may also match other names, so require hits overall + at least one Saudi one
+    let saudi = popup_entries(PopupKind::Location, "saudi");
+    assert!(saudi.iter().all(|e| matches!(
+        e,
+        PopupEntry::City(c) if fuzzy(c[0], "saudi") || fuzzy(c[1], "saudi")
+    )));
+    assert!(saudi.iter().any(|e| matches!(
+        e,
+        PopupEntry::City(c) if c[1] == "Saudi Arabia"
+    )));
+    let makkah = popup_entries(PopupKind::Location, "makkah");
+    assert!(makkah.iter().any(|e| matches!(
+        e,
+        PopupEntry::City(c) if c[1] == "Saudi Arabia"
     )));
 
     assert!(popup_entries(PopupKind::Island, "anything").is_empty());
@@ -447,15 +480,16 @@ fn test_popup_filter() {
 
 #[test]
 fn test_apply_city() {
-    let Some(PopupEntry::City(city)) = popup_entries(PopupKind::Location, "london").into_iter().next() else {
-        panic!("london should exist in embedded cities");
-    };
+    let city: &'static [&'static str; 4] = &CITIES
+        .iter()
+        .find(|c| c[0] == "London" && c[1] == "United Kingdom")
+        .expect("london should exist in embedded cities");
 
     let mut config = Config::default();
     apply_city(&mut config, city);
-    assert_eq!(config.calculation.location, format!("{}, {}", city.city, city.country));
-    assert_eq!(config.coordinates.latitude, city.latitude);
-    assert_eq!(config.coordinates.longitude, city.longitude);
+    assert_eq!(config.calculation.location, "London, United Kingdom");
+    assert_eq!(config.coordinates.latitude, city[2].parse::<f64>().unwrap());
+    assert_eq!(config.coordinates.longitude, city[3].parse::<f64>().unwrap());
 }
 
 #[test]

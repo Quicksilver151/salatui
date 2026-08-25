@@ -27,11 +27,13 @@ mod structs;
 mod ui;
 mod parsers;
 mod backends;
+mod data;
 
 pub use structs::*;
 pub use ui::*;
 pub use parsers::*;
 pub use backends::*;
+pub use data::*;
 
 fn output_data(config: &mut Config) {
     let mut app_state: AppState = AppState{config: std::mem::take(config), ..Default::default()};

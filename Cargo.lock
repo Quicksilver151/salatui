@@ -336,12 +336,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cities"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee8bec2115436fa4c2d3fb2e7286482c16e812fd781f2e40ffb8d1f66186e4c2"
-
-[[package]]
 name = "clap"
 version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1435,7 +1429,6 @@ version = "0.1.0"
 dependencies = [
  "arboard",
  "chrono",
- "cities",
  "clap",
  "confy",
  "crossterm 0.26.1",

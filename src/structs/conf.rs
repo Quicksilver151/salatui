@@ -167,7 +167,7 @@ impl LocationDisplay {
         }
     }
 }
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Display {
     pub ui_mode: UIMode,
@@ -176,6 +176,18 @@ pub struct Display {
     pub fullscreen: bool,
     pub seconds: bool,
     pub location: LocationDisplay,
+}
+impl Default for Display {
+    fn default() -> Self {
+        Display {
+            ui_mode: UIMode::default(),
+            format: TimeFormat::default(),
+            indicator: TimeIndicator::default(),
+            fullscreen: false,
+            seconds: true,
+            location: LocationDisplay::default(),
+        }
+    }
 }
 
 // [Notifications] ===================================

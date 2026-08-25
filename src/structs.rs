@@ -347,6 +347,14 @@ fn test_prayertime() {
     assert_eq!(expected, result);
 }
 
+#[test]
+fn test_config_defaults() {
+    let config = Config::default();
+    assert!(config.display.seconds);
+    assert_eq!(config.provider, ProviderKind::Calculation);
+    assert_eq!(config.salatmv.island, DEFAULT_MV_ISLAND_KEY);
+}
+
 
 
 

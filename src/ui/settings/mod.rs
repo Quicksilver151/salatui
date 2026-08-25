@@ -126,7 +126,7 @@ fn draw_popup(f: &mut Frame, area: Rect, kind: PopupKind, cursor: usize, mut off
     f.render_widget(Clear, popup);
 
     let title = match kind {
-        PopupKind::Location => format!("select location [{}/{}]", entries.len(), cities::all().len()),
+        PopupKind::Location => format!("select location [{}/{}]", entries.len(), CITIES.len()),
         PopupKind::Island => format!("select island [{}/{}]", entries.len(), ISLAND_DATA.len()),
     };
 
@@ -188,7 +188,13 @@ fn shrink(rect: Rect) -> Rect {
 
 fn popup_label(entry: &PopupEntry) -> String {
     match entry {
-        PopupEntry::City(c) => format!("{} ({}) [{:.4}, {:.4}]", c.city, c.country, c.latitude, c.longitude),
+        PopupEntry::City(c) => format!(
+            "{} ({}) [{:.4}, {:.4}]",
+            c[0],
+            c[1],
+            c[2].parse::<f64>().unwrap_or(0.0),
+            c[3].parse::<f64>().unwrap_or(0.0)
+        ),
         PopupEntry::Island(name) => name.clone(),
     }
 }
@@ -328,7 +334,7 @@ fn handle_popup_key(app_state: &mut AppState, (key, modifier): (Key, crate::stru
         Key::Up => store_popup(app_state, kind, cursor.saturating_sub(step).min(len.saturating_sub(1)), offset, filter),
         Key::Down if len > 0 => store_popup(app_state, kind, (cursor + step).min(len - 1), offset, filter),
         Key::Enter => apply_popup(app_state, kind, cursor, offset, filter),
-        Key::Escape | Key::Config => app_state.settings.mode = SettingsMode::Normal,
+        Key::Escape => app_state.settings.mode = SettingsMode::Normal,
         Key::Backspace => {
             let mut next = filter;
             next.pop();
