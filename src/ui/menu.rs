@@ -2,8 +2,9 @@ use super::*;
 
 pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState){
     // let input_map = app_state.input_map.to_owned();
-    
-    let layouts = MainContainer::from(ui_state.get_screen_rect());
+
+    let location_text = location_line(app_state);
+    let layouts = MainContainer::from(ui_state.get_screen_rect(), u16::from(location_text.is_some()));
     ui_state.set_header("SalaTUI");
     ui_state.set_footer(vec![
         ["q", "uit"],
@@ -25,7 +26,8 @@ pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState
 
     let menu_block = new_color_block("", Color::Green);
     
-    let time_str = format!("Time: {}", current_time.format("%I:%M:%S %p"));
+    let time_fmt = if app_state.config.display.seconds { "%I:%M:%S %p" } else { "%I:%M %p" };
+    let time_str = format!("Time: {}", current_time.format(time_fmt));
     let date_str = format!("Date: {}", current_date.format("%d %b %Y"));
 
     // HACK: slat calc testing ==============================================
@@ -55,16 +57,24 @@ pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState
     let inner_width = layouts.salat.width.saturating_sub(2) as usize;
     let longest = rows
         .iter()
-        .chain([&time_str, &date_str])
         .map(|line| line.chars().count())
+        .chain([time_str.chars().count(), date_str.chars().count()])
+        .chain(location_text.iter().map(|line| line.chars().count()))
         .max()
         .unwrap_or(0);
     let pad = " ".repeat(inner_width.saturating_sub(longest) / 2);
 
-    let title_widget = Paragraph::new(vec![
+    let mut title_lines = vec![
         Line::from(Span::styled(format!("{pad}{time_str}"), Style::default().add_modifier(Modifier::BOLD))),
         Line::from(Span::styled(format!("{pad}{date_str}"), Style::default().add_modifier(Modifier::BOLD))),
-    ]).block(title_block);
+    ];
+    if let Some(location) = &location_text {
+        title_lines.push(Line::from(Span::styled(
+            format!("{pad}{location}"),
+            Style::default(),
+        )));
+    }
+    let title_widget = Paragraph::new(title_lines).block(title_block);
 
     let menu_list = rows
         .into_iter()
@@ -90,6 +100,36 @@ pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState
     
     f.render_widget(title_widget, layouts.title);
     f.render_widget(menu_widget, layouts.salat);
-    
+
+}
+
+/// (city, country) derived from the active provider.
+/// Calculation providers store "city, country" as one string;
+/// dataset providers are Maldives datasets named like "AA. Male'".
+fn location_parts(app_state: &AppState) -> (String, String) {
+    match &app_state.config.provider {
+        ProviderConfig::Calculation(calc) => match calc.location.split_once(", ") {
+            Some((city, country)) => (city.to_string(), country.to_string()),
+            None => (calc.location.clone(), String::new()),
+        },
+        ProviderConfig::Data(name) => (name.clone(), "Maldives".to_string()),
+    }
+}
+
+/// the rendered location line for the menu title, if any
+fn location_line(app_state: &AppState) -> Option<String> {
+    let mode = app_state.config.display.location;
+    if mode == LocationDisplay::Hide {
+        return None;
+    }
+    let (city, country) = location_parts(app_state);
+    let text = match mode {
+        LocationDisplay::Hide => return None,
+        LocationDisplay::Country => country,
+        LocationDisplay::City => city,
+        LocationDisplay::CityCountry => format!("{city}, {country}"),
+    };
+    let text = text.trim().trim_matches(',').trim().to_string();
+    (!text.is_empty()).then_some(text)
 }
 

@@ -25,6 +25,12 @@ const INDICATOR_VARIANTS: [TimeIndicator; 4] = [
     TimeIndicator::Inbetween,
     TimeIndicator::Next,
 ];
+const LOCATION_VARIANTS: [LocationDisplay; 4] = [
+    LocationDisplay::Hide,
+    LocationDisplay::Country,
+    LocationDisplay::City,
+    LocationDisplay::CityCountry,
+];
 const RAWMODE_VARIANTS: [RawOutputMode; 6] = [
     RawOutputMode::Array,
     RawOutputMode::Custom,
@@ -80,9 +86,7 @@ pub enum FieldId {
     Indicator,
     Fullscreen,
     Seconds,
-    ShowLocation,
-    ShowCoordinates,
-    ShowRawOutput,
+    Location,
 
     NotifEnabled,
     NotifOffset,
@@ -139,9 +143,7 @@ pub fn fields_for(category: usize, config: &Config) -> Vec<FieldRow> {
             FieldRow { id: FieldId::Indicator, label: "indicator", kind: FieldKind::Cycle },
             FieldRow { id: FieldId::Fullscreen, label: "start fullscreen", kind: FieldKind::Toggle },
             FieldRow { id: FieldId::Seconds, label: "show seconds", kind: FieldKind::Toggle },
-            FieldRow { id: FieldId::ShowLocation, label: "show location", kind: FieldKind::Toggle },
-            FieldRow { id: FieldId::ShowCoordinates, label: "show coordinates", kind: FieldKind::Toggle },
-            FieldRow { id: FieldId::ShowRawOutput, label: "show raw output", kind: FieldKind::Toggle },
+            FieldRow { id: FieldId::Location, label: "location", kind: FieldKind::Cycle },
         ],
         2 => vec![
             FieldRow { id: FieldId::NotifEnabled, label: "enabled", kind: FieldKind::Toggle },
@@ -223,9 +225,7 @@ impl FieldId {
             FieldId::Indicator => format!("{:?}", config.display.indicator),
             FieldId::Fullscreen => config.display.fullscreen.to_string(),
             FieldId::Seconds => config.display.seconds.to_string(),
-            FieldId::ShowLocation => config.display.location.to_string(),
-            FieldId::ShowCoordinates => config.display.coordinates.to_string(),
-            FieldId::ShowRawOutput => config.display.show_raw_output.to_string(),
+            FieldId::Location => config.display.location.name().to_string(),
 
             FieldId::NotifEnabled => config.notifications.enabled.to_string(),
             FieldId::NotifOffset => config.notifications.offset.to_string(),
@@ -245,6 +245,7 @@ impl FieldId {
             FieldId::UiMode => UIMODE_VARIANTS.len(),
             FieldId::TimeFormat => TIMEFORMAT_VARIANTS.len(),
             FieldId::Indicator => INDICATOR_VARIANTS.len(),
+            FieldId::Location => LOCATION_VARIANTS.len(),
             FieldId::RawMode => RAWMODE_VARIANTS.len(),
             _ => return None,
         };
@@ -262,6 +263,7 @@ impl FieldId {
             FieldId::UiMode => UIMODE_VARIANTS.iter().position(|v| *v == config.display.ui_mode),
             FieldId::TimeFormat => TIMEFORMAT_VARIANTS.iter().position(|v| *v == config.display.format),
             FieldId::Indicator => INDICATOR_VARIANTS.iter().position(|v| *v == config.display.indicator),
+            FieldId::Location => LOCATION_VARIANTS.iter().position(|v| *v == config.display.location),
             FieldId::RawMode => RAWMODE_VARIANTS.iter().position(|v| *v == config.raw_output.mode),
             _ => None,
         }
@@ -288,6 +290,7 @@ impl FieldId {
             FieldId::UiMode => config.display.ui_mode = UIMODE_VARIANTS[next],
             FieldId::TimeFormat => config.display.format = TIMEFORMAT_VARIANTS[next],
             FieldId::Indicator => config.display.indicator = INDICATOR_VARIANTS[next],
+            FieldId::Location => config.display.location = LOCATION_VARIANTS[next],
             FieldId::RawMode => config.raw_output.mode = RAWMODE_VARIANTS[next],
             _ => {}
         }
@@ -297,9 +300,6 @@ impl FieldId {
         match self {
             FieldId::Fullscreen => config.display.fullscreen = !config.display.fullscreen,
             FieldId::Seconds => config.display.seconds = !config.display.seconds,
-            FieldId::ShowLocation => config.display.location = !config.display.location,
-            FieldId::ShowCoordinates => config.display.coordinates = !config.display.coordinates,
-            FieldId::ShowRawOutput => config.display.show_raw_output = !config.display.show_raw_output,
             FieldId::NotifEnabled => config.notifications.enabled = !config.notifications.enabled,
             FieldId::RawPool => config.raw_output.pool = !config.raw_output.pool,
             _ => {}
@@ -401,7 +401,7 @@ pub fn apply_city(config: &mut Config, city: &cities::City) {
 fn test_fields_for_counts() {
     let config = Config::default();
     assert_eq!(fields_for(0, &config).len(), 7);
-    assert_eq!(fields_for(1, &config).len(), 8);
+    assert_eq!(fields_for(1, &config).len(), 6);
     assert_eq!(fields_for(2, &config).len(), 2);
     assert_eq!(fields_for(3, &config).len(), 4);
     assert!(fields_for(4, &config).is_empty());

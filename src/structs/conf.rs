@@ -133,6 +133,24 @@ pub enum TimeIndicator {
     Inbetween,
     Next,
 }
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LocationDisplay {
+    #[default]
+    Hide,
+    Country,
+    City,
+    CityCountry,
+}
+impl LocationDisplay {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Hide => "hide",
+            Self::Country => "country",
+            Self::City => "city",
+            Self::CityCountry => "city, country",
+        }
+    }
+}
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Display {
@@ -140,10 +158,8 @@ pub struct Display {
     pub format: TimeFormat,
     pub indicator: TimeIndicator,
     pub fullscreen: bool,
-    pub show_raw_output: bool,
     pub seconds: bool,
-    pub location: bool,
-    pub coordinates: bool,
+    pub location: LocationDisplay,
 }
 
 // [Notifications] ===================================

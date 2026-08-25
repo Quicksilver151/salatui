@@ -96,19 +96,19 @@ impl RootContainer {
 
 // changeable setting ui + struct needed here Option{SettingType}; settingtype::choice(vec), string(or int)
 impl MainContainer {
-    /// the main layout
-    pub fn from(area: Rect) -> MainContainer {
-        
+    /// the main layout; `extra_title_lines` grows the title pane for optional info lines
+    pub fn from(area: Rect, extra_title_lines: u16) -> MainContainer {
+
         let layouts = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(4),
+            Constraint::Length(4 + extra_title_lines),
             Constraint::Min(8),
         ]).split(area);
-        
+
         let salat = layouts[1];
         let title = layouts[0];
-        
+
         MainContainer { title , salat }
     }
 }
