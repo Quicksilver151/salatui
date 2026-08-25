@@ -7,22 +7,45 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CalculationConfig {
-    pub name: String,
     pub location: String,
     pub method: Method,
     pub madhab: Madhab,
-    pub coordinates: Coords
 }
 
 impl Default for CalculationConfig {
     fn default() -> Self {
-        let name:String = "Default".into();
         let location: String = "Kaaba".into();
         let method = Method::default();
         let madhab = Madhab::default();
-        let coordinates = Coords{latitude: 21.4225, longitude: 39.8262};
 
-        CalculationConfig { name, location, method, madhab, coordinates}
+        CalculationConfig { location, method, madhab}
+    }
+}
+
+/// which provider is active; both stay stored in the config
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProviderKind {
+    #[default]
+    Calculation,
+    SalatMv,
+}
+impl ProviderKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Calculation => "Calculation",
+            Self::SalatMv => "Salat MV",
+        }
+    }
+}
+
+/// built-in Maldives dataset provider
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SalatMvConfig {
+    pub island: String,
+}
+impl Default for SalatMvConfig {
+    fn default() -> Self {
+        SalatMvConfig { island: crate::DEFAULT_MV_ISLAND_KEY.to_string() }
     }
 }
 
@@ -82,10 +105,16 @@ impl Method {
     }
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Coords {
     pub latitude: f64,
     pub longitude: f64,
+}
+impl Default for Coords {
+    fn default() -> Self {
+        // Kaaba
+        Coords { latitude: 21.4225, longitude: 39.8262 }
+    }
 }
 impl Coords {
     pub fn to_runtime_config(&self) -> salah::Coordinates{
@@ -95,19 +124,6 @@ impl Coords {
         }
     }
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ProviderConfig {
-    Data(String),
-    Calculation(CalculationConfig),
-}
-impl Default for ProviderConfig {
-    fn default() -> Self {
-        Self::Calculation(CalculationConfig::default())
-    }
-}
-
 
 // [Display] ===================================
 
@@ -220,9 +236,15 @@ impl Default for RawOutput {
 const CONFIG_NAME: &str = "config-dev";
 
 
+/// flat schema: every section persists independently, `provider` only selects
+/// which one is active
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
-    pub provider: ProviderConfig,
+    pub provider: ProviderKind,
+    pub calculation: CalculationConfig,
+    pub coordinates: Coords,
+    pub salatmv: SalatMvConfig,
     pub display: Display,
     pub notifications: Notifications,
     pub raw_output: RawOutput,
@@ -234,10 +256,7 @@ impl Config {
             Ok(config) => config,
             Err(err) => {
                 println!("{err}\nconfig is broken\nloading a new config from defaults");
-                let new_config = Config {
-                    provider: ProviderConfig::Calculation(CalculationConfig::default()),
-                    ..Config::default()
-                };
+                let new_config = Config::default();
 
                 match new_config.save() {
                     Ok(_) => {}

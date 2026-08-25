@@ -33,27 +33,18 @@ pub use ui::*;
 pub use parsers::*;
 pub use backends::*;
 
-use crate::mv_dataset::TimeSetData;
-
 fn output_data(config: &mut Config) {
-    let current_time = chrono::offset::Local::now();
+    let mut app_state: AppState = AppState{config: std::mem::take(config), ..Default::default()};
+    app_state.init_provider();
     
-    match &config.provider {
-        ProviderConfig::Data(name) => {
-            let loaded = TimeSetData::load(name).unwrap();
-            loop {
-                let today_data = loaded.data_from_day(loaded.day_index(current_time.date_naive()));
-                let today_data = today_data.output_format(config);
-                println!("{}",today_data);
-                if !config.raw_output.pool {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_secs(1));
-            }
-            // let today_dataset = PrayerTime::from_vec(loaded.data[current_date].clone());
-        },
-        
-        ProviderConfig::Calculation(_) =>{},
+    loop {
+        let today_data = app_state.get_prayer_times();
+        let today_data = today_data.output_format(&app_state.config);
+        println!("{}",today_data);
+        if !app_state.config.raw_output.pool {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_secs(1));
     }
 }
 

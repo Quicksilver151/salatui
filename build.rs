@@ -67,7 +67,6 @@ fn format_as_rust_vec(atoll_data: Vec<String>, island_data: Vec<String>) -> Stri
     }
     string.push_str("];");
 
-    println!("{}",string);
     string
     
 }
@@ -105,5 +104,6 @@ fn main(){
     
     write(dest_path, final_string).unwrap_or(());
     
-    println!("cargo:rerun-if-changed=build.rs")   
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=data")
 }

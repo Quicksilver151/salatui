@@ -105,14 +105,14 @@ pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState
 
 /// (city, country) derived from the active provider.
 /// Calculation providers store "city, country" as one string;
-/// dataset providers are Maldives datasets named like "AA. Male'".
+/// Salat MV islands are atoll-prefixed keys like "AA. Male'".
 fn location_parts(app_state: &AppState) -> (String, String) {
-    match &app_state.config.provider {
-        ProviderConfig::Calculation(calc) => match calc.location.split_once(", ") {
+    match app_state.config.provider {
+        ProviderKind::Calculation => match app_state.config.calculation.location.split_once(", ") {
             Some((city, country)) => (city.to_string(), country.to_string()),
-            None => (calc.location.clone(), String::new()),
+            None => (app_state.config.calculation.location.clone(), String::new()),
         },
-        ProviderConfig::Data(name) => (name.clone(), "Maldives".to_string()),
+        ProviderKind::SalatMv => (app_state.config.salatmv.island.clone(), "Maldives".to_string()),
     }
 }
 

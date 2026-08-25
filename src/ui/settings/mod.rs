@@ -127,7 +127,7 @@ fn draw_popup(f: &mut Frame, area: Rect, kind: PopupKind, cursor: usize, mut off
 
     let title = match kind {
         PopupKind::Location => format!("select location [{}/{}]", entries.len(), cities::all().len()),
-        PopupKind::Dataset => format!("select dataset [{}]", entries.len()),
+        PopupKind::Island => format!("select island [{}/{}]", entries.len(), ISLAND_DATA.len()),
     };
 
     let inner = shrink(popup);
@@ -189,7 +189,7 @@ fn shrink(rect: Rect) -> Rect {
 fn popup_label(entry: &PopupEntry) -> String {
     match entry {
         PopupEntry::City(c) => format!("{} ({}) [{:.4}, {:.4}]", c.city, c.country, c.latitude, c.longitude),
-        PopupEntry::Dataset(name) => name.clone(),
+        PopupEntry::Island(name) => name.clone(),
     }
 }
 
@@ -297,10 +297,6 @@ fn activate_current(app_state: &mut AppState) {
 }
 
 fn open_picker(app_state: &mut AppState, kind: PopupKind) {
-    if kind == PopupKind::Dataset && TimeSetData::list().is_empty() {
-        app_state.message = Some("no stored datasets in data directory".to_string());
-        return;
-    }
     app_state.settings.mode = SettingsMode::Popup {
         kind,
         cursor: 0,
@@ -355,9 +351,9 @@ fn apply_popup(app_state: &mut AppState, kind: PopupKind, cursor: usize, offset:
         .get(cursor)
         .map(|entry| match entry {
             PopupEntry::City(city) => (Some(*city), None),
-            PopupEntry::Dataset(name) => (None, Some(name.clone())),
+            PopupEntry::Island(key) => (None, Some(key.clone())),
         });
-    let Some((city, dataset)) = selected else {
+    let Some((city, island)) = selected else {
         store_popup(app_state, kind, cursor, offset, filter);
         return;
     };
@@ -369,18 +365,15 @@ fn apply_popup(app_state: &mut AppState, kind: PopupKind, cursor: usize, offset:
         return;
     }
 
-    let Some(name) = dataset else {
+    let Some(key) = island else {
         return;
     };
-    if TimeSetData::load(&name).is_err() {
-        app_state.message = Some("dataset not found in data directory".to_string());
+    if timeset_for_island(&key).is_none() {
+        app_state.message = Some("failed to parse island data".to_string());
         store_popup(app_state, kind, cursor, offset, filter);
         return;
     }
-    if let ProviderConfig::Data(current) = &app_state.config.provider {
-        app_state.settings.data_cache = Some(current.clone());
-    }
-    app_state.config.provider = ProviderConfig::Data(name);
+    app_state.config.salatmv.island = key;
     let len = fields_for(0, &app_state.config).len();
     app_state.settings.cursor = app_state.settings.cursor.min(len.saturating_sub(1));
     app_state.settings.mode = SettingsMode::Normal;
@@ -395,13 +388,6 @@ fn handle_text_key(app_state: &mut AppState, key: Key) {
     match key {
         Key::Enter => {
             let is_provider = field.is_provider();
-            if field == FieldId::DatasetName
-                && TimeSetData::load(buffer.trim()).is_err()
-            {
-                app_state.message = Some("dataset not found in data directory".to_string());
-                app_state.settings.mode = SettingsMode::TextInput { field, buffer };
-                return;
-            }
             match field.commit_text(&mut app_state.config, &buffer) {
                 Ok(()) => after_change(app_state, is_provider),
                 Err(err) => {
@@ -425,22 +411,11 @@ fn handle_text_key(app_state: &mut AppState, key: Key) {
 }
 
 fn switch_provider_type(app_state: &mut AppState) {
-    match app_state.config.provider.clone() {
-        ProviderConfig::Calculation(calc) => {
-            let dataset = app_state.settings.data_cache.clone().unwrap_or_default();
-            if TimeSetData::load(&dataset).is_ok() {
-                app_state.settings.calc_cache = Some(calc);
-                app_state.config.provider = ProviderConfig::Data(dataset);
-            } else {
-                app_state.message = Some("no stored dataset available".to_string());
-            }
-        }
-        ProviderConfig::Data(name) => {
-            app_state.settings.data_cache = Some(name);
-            let calc = app_state.settings.calc_cache.take().unwrap_or_default();
-            app_state.config.provider = ProviderConfig::Calculation(calc);
-        }
-    }
+    // both provider sections stay stored in the config; only the selector flips
+    app_state.config.provider = match app_state.config.provider {
+        ProviderKind::Calculation => ProviderKind::SalatMv,
+        ProviderKind::SalatMv => ProviderKind::Calculation,
+    };
     let len = fields_for(0, &app_state.config).len();
     app_state.settings.cursor = app_state.settings.cursor.min(len.saturating_sub(1));
     after_change(app_state, true);

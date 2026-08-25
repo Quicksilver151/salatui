@@ -46,8 +46,6 @@ pub struct SettingsState {
     pub cursor: usize,
     pub offset: usize,
     pub mode: SettingsMode,
-    pub calc_cache: Option<CalculationConfig>,
-    pub data_cache: Option<String>,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -61,25 +59,24 @@ pub enum SettingsMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PopupKind {
     Location,
-    Dataset,
+    Island,
 }
 
 #[derive(Debug)]
 pub enum PopupEntry {
     City(&'static cities::City),
-    Dataset(String),
+    Island(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldId {
     ProviderType,
-    ProviderName,
     ProviderLocation,
     ProviderMethod,
     ProviderMadhab,
     ProviderLatitude,
     ProviderLongitude,
-    DatasetName,
+    Island,
 
     UiMode,
     TimeFormat,
@@ -120,19 +117,18 @@ pub fn fields_for(category: usize, config: &Config) -> Vec<FieldRow> {
                 label: "type",
                 kind: FieldKind::Cycle,
             }];
-            match &config.provider {
-                ProviderConfig::Calculation(_) => rows.extend([
-                    FieldRow { id: FieldId::ProviderName, label: "name", kind: FieldKind::Text { numeric: false } },
+            match config.provider {
+                ProviderKind::Calculation => rows.extend([
                     FieldRow { id: FieldId::ProviderLocation, label: "location", kind: FieldKind::Pick(PopupKind::Location) },
                     FieldRow { id: FieldId::ProviderMethod, label: "method", kind: FieldKind::Cycle },
                     FieldRow { id: FieldId::ProviderMadhab, label: "madhab", kind: FieldKind::Cycle },
                     FieldRow { id: FieldId::ProviderLatitude, label: "latitude", kind: FieldKind::Text { numeric: true } },
                     FieldRow { id: FieldId::ProviderLongitude, label: "longitude", kind: FieldKind::Text { numeric: true } },
                 ]),
-                ProviderConfig::Data(_) => rows.extend([FieldRow {
-                    id: FieldId::DatasetName,
-                    label: "dataset",
-                    kind: FieldKind::Pick(PopupKind::Dataset),
+                ProviderKind::SalatMv => rows.extend([FieldRow {
+                    id: FieldId::Island,
+                    label: "island",
+                    kind: FieldKind::Pick(PopupKind::Island),
                 }]),
             }
             rows
@@ -164,13 +160,12 @@ impl FieldId {
         matches!(
             self,
             FieldId::ProviderType
-                | FieldId::ProviderName
                 | FieldId::ProviderLocation
                 | FieldId::ProviderMethod
                 | FieldId::ProviderMadhab
                 | FieldId::ProviderLatitude
                 | FieldId::ProviderLongitude
-                | FieldId::DatasetName
+                | FieldId::Island
         )
     }
 
@@ -189,36 +184,15 @@ impl FieldId {
         }
     }
 
-    fn calc(config: &Config) -> Option<&CalculationConfig> {
-        match &config.provider {
-            ProviderConfig::Calculation(c) => Some(c),
-            ProviderConfig::Data(_) => None,
-        }
-    }
-
-    fn calc_mut(config: &mut Config) -> Option<&mut CalculationConfig> {
-        match &mut config.provider {
-            ProviderConfig::Calculation(c) => Some(c),
-            ProviderConfig::Data(_) => None,
-        }
-    }
-
     pub fn value_str(self, config: &Config) -> String {
         match self {
-            FieldId::ProviderType => match &config.provider {
-                ProviderConfig::Data(_) => "Data".to_string(),
-                ProviderConfig::Calculation(_) => "Calculation".to_string(),
-            },
-            FieldId::ProviderName => Self::calc(config).map(|c| c.name.clone()).unwrap_or_default(),
-            FieldId::ProviderLocation => Self::calc(config).map(|c| c.location.clone()).unwrap_or_default(),
-            FieldId::ProviderMethod => Self::calc(config).map(|c| method_name(&c.method).to_string()).unwrap_or_default(),
-            FieldId::ProviderMadhab => Self::calc(config).map(|c| format!("{:?}", c.madhab)).unwrap_or_default(),
-            FieldId::ProviderLatitude => Self::calc(config).map(|c| c.coordinates.latitude.to_string()).unwrap_or_default(),
-            FieldId::ProviderLongitude => Self::calc(config).map(|c| c.coordinates.longitude.to_string()).unwrap_or_default(),
-            FieldId::DatasetName => match &config.provider {
-                ProviderConfig::Data(name) => name.clone(),
-                ProviderConfig::Calculation(_) => String::new(),
-            },
+            FieldId::ProviderType => config.provider.label().to_string(),
+            FieldId::ProviderLocation => config.calculation.location.clone(),
+            FieldId::ProviderMethod => method_name(&config.calculation.method).to_string(),
+            FieldId::ProviderMadhab => format!("{:?}", config.calculation.madhab),
+            FieldId::ProviderLatitude => config.coordinates.latitude.to_string(),
+            FieldId::ProviderLongitude => config.coordinates.longitude.to_string(),
+            FieldId::Island => config.salatmv.island.clone(),
 
             FieldId::UiMode => format!("{:?}", config.display.ui_mode),
             FieldId::TimeFormat => format!("{:?}", config.display.format),
@@ -254,12 +228,12 @@ impl FieldId {
 
     fn current_index(self, config: &Config) -> Option<usize> {
         match self {
-            FieldId::ProviderType => match &config.provider {
-                ProviderConfig::Calculation(_) => Some(1),
-                ProviderConfig::Data(_) => Some(0),
+            FieldId::ProviderType => match config.provider {
+                ProviderKind::SalatMv => Some(0),
+                ProviderKind::Calculation => Some(1),
             },
-            FieldId::ProviderMethod => Self::calc(config).and_then(|c| METHOD_VARIANTS.iter().position(|v| *v == c.method)),
-            FieldId::ProviderMadhab => Self::calc(config).and_then(|c| MADHAB_VARIANTS.iter().position(|v| *v == c.madhab)),
+            FieldId::ProviderMethod => METHOD_VARIANTS.iter().position(|v| *v == config.calculation.method),
+            FieldId::ProviderMadhab => MADHAB_VARIANTS.iter().position(|v| *v == config.calculation.madhab),
             FieldId::UiMode => UIMODE_VARIANTS.iter().position(|v| *v == config.display.ui_mode),
             FieldId::TimeFormat => TIMEFORMAT_VARIANTS.iter().position(|v| *v == config.display.format),
             FieldId::Indicator => INDICATOR_VARIANTS.iter().position(|v| *v == config.display.indicator),
@@ -278,14 +252,10 @@ impl FieldId {
         let next = (idx as isize + delta).rem_euclid(len as isize) as usize;
         match self {
             FieldId::ProviderMethod => {
-                if let Some(c) = Self::calc_mut(config) {
-                    c.method = METHOD_VARIANTS[next];
-                }
+                config.calculation.method = METHOD_VARIANTS[next];
             }
             FieldId::ProviderMadhab => {
-                if let Some(c) = Self::calc_mut(config) {
-                    c.madhab = MADHAB_VARIANTS[next];
-                }
+                config.calculation.madhab = MADHAB_VARIANTS[next];
             }
             FieldId::UiMode => config.display.ui_mode = UIMODE_VARIANTS[next],
             FieldId::TimeFormat => config.display.format = TIMEFORMAT_VARIANTS[next],
@@ -313,37 +283,22 @@ impl FieldId {
                 if !value.is_finite() || !(-90.0..=90.0).contains(&value) {
                     return Err(format!("latitude out of range: {value}"));
                 }
-                if let Some(c) = Self::calc_mut(config) {
-                    c.coordinates.latitude = value;
-                }
+                config.coordinates.latitude = value;
             }
             FieldId::ProviderLongitude => {
                 let value: f64 = text.trim().parse().map_err(|e| format!("invalid longitude: {e}"))?;
                 if !value.is_finite() || !(-180.0..=180.0).contains(&value) {
                     return Err(format!("longitude out of range: {value}"));
                 }
-                if let Some(c) = Self::calc_mut(config) {
-                    c.coordinates.longitude = value;
-                }
+                config.coordinates.longitude = value;
             }
             FieldId::NotifOffset => {
                 let value: i32 = text.trim().parse().map_err(|e| format!("invalid offset: {e}"))?;
                 config.notifications.offset = value;
             }
-            FieldId::ProviderName => {
-                if let Some(c) = Self::calc_mut(config) {
-                    c.name = text.to_string();
-                }
-            }
             FieldId::ProviderLocation => {
-                if let Some(c) = Self::calc_mut(config) {
-                    c.location = text.to_string();
-                }
+                config.calculation.location = text.to_string();
             }
-            FieldId::DatasetName => match &mut config.provider {
-                ProviderConfig::Data(name) => *name = text.to_string(),
-                ProviderConfig::Calculation(_) => return Err("not a dataset provider".to_string()),
-            },
             FieldId::RawSeparator => config.raw_output.raw_separator = text.to_string(),
             FieldId::RawCustomString => config.raw_output.custom_string = text.to_string(),
             _ => return Err("field is not editable as text".to_string()),
@@ -381,36 +336,34 @@ pub fn popup_entries(kind: PopupKind, filter: &str) -> Vec<PopupEntry> {
             })
             .map(PopupEntry::City)
             .collect(),
-        PopupKind::Dataset => TimeSetData::list()
+        PopupKind::Island => island_keys()
             .into_iter()
             .filter(|n| needle.is_empty() || n.to_lowercase().contains(&needle))
-            .map(PopupEntry::Dataset)
+            .map(PopupEntry::Island)
             .collect(),
     }
 }
 
 pub fn apply_city(config: &mut Config, city: &cities::City) {
-    if let Some(c) = FieldId::calc_mut(config) {
-        c.location = format!("{}, {}", city.city, city.country);
-        c.coordinates.latitude = city.latitude;
-        c.coordinates.longitude = city.longitude;
-    }
+    config.calculation.location = format!("{}, {}", city.city, city.country);
+    config.coordinates.latitude = city.latitude;
+    config.coordinates.longitude = city.longitude;
 }
 
 #[test]
 fn test_fields_for_counts() {
     let config = Config::default();
-    assert_eq!(fields_for(0, &config).len(), 7);
+    assert_eq!(fields_for(0, &config).len(), 6);
     assert_eq!(fields_for(1, &config).len(), 6);
     assert_eq!(fields_for(2, &config).len(), 2);
     assert_eq!(fields_for(3, &config).len(), 4);
     assert!(fields_for(4, &config).is_empty());
 
-    let data_config = Config {
-        provider: ProviderConfig::Data(String::new()),
+    let mv_config = Config {
+        provider: ProviderKind::SalatMv,
         ..Config::default()
     };
-    assert_eq!(fields_for(0, &data_config).len(), 2);
+    assert_eq!(fields_for(0, &mv_config).len(), 2);
 }
 
 #[test]
@@ -425,10 +378,7 @@ fn test_cycle_wraps() {
     assert_eq!(config.display.indicator, TimeIndicator::Empty);
 
     FieldId::ProviderMadhab.cycle(&mut config, 1);
-    match &config.provider {
-        ProviderConfig::Calculation(c) => assert_eq!(c.madhab, Madhab::Hanafi),
-        ProviderConfig::Data(_) => panic!("provider should stay calculation"),
-    }
+    assert_eq!(config.calculation.madhab, Madhab::Hanafi);
 }
 
 #[test]
@@ -438,10 +388,7 @@ fn test_numeric_rejects() {
     assert!(FieldId::ProviderLatitude.commit_text(&mut config, "abc").is_err());
     assert!(FieldId::ProviderLatitude.commit_text(&mut config, "999").is_err());
     assert!(FieldId::ProviderLatitude.commit_text(&mut config, "21.4225").is_ok());
-    match &config.provider {
-        ProviderConfig::Calculation(c) => assert!((c.coordinates.latitude - 21.4225).abs() < f64::EPSILON),
-        ProviderConfig::Data(_) => panic!("provider should stay calculation"),
-    }
+    assert!((config.coordinates.latitude - 21.4225).abs() < f64::EPSILON);
 
     assert!(FieldId::NotifOffset.commit_text(&mut config, "").is_err());
     assert!(FieldId::NotifOffset.commit_text(&mut config, "-14").is_ok());
@@ -465,7 +412,7 @@ fn test_steppable_flags() {
 fn test_censor_flags() {
     assert!(FieldId::ProviderLatitude.censored());
     assert!(FieldId::ProviderLongitude.censored());
-    assert!(!FieldId::ProviderName.censored());
+    assert!(!FieldId::ProviderLocation.censored());
     assert!(!FieldId::NotifOffset.censored());
 }
 
@@ -473,14 +420,14 @@ fn test_censor_flags() {
 fn test_pick_rows() {
     let config = Config::default();
     let rows = fields_for(0, &config);
-    assert!(matches!(rows[2].kind, FieldKind::Pick(PopupKind::Location)));
+    assert!(matches!(rows[1].kind, FieldKind::Pick(PopupKind::Location)));
 
-    let data_config = Config {
-        provider: ProviderConfig::Data(String::new()),
+    let mv_config = Config {
+        provider: ProviderKind::SalatMv,
         ..Config::default()
     };
-    let rows = fields_for(0, &data_config);
-    assert!(matches!(rows[1].kind, FieldKind::Pick(PopupKind::Dataset)));
+    let rows = fields_for(0, &mv_config);
+    assert!(matches!(rows[1].kind, FieldKind::Pick(PopupKind::Island)));
 }
 
 #[test]
@@ -495,7 +442,7 @@ fn test_popup_filter() {
             if c.city.to_lowercase().contains("london") || c.country.to_lowercase().contains("london")
     )));
 
-    assert!(popup_entries(PopupKind::Dataset, "anything").is_empty());
+    assert!(popup_entries(PopupKind::Island, "anything").is_empty());
 }
 
 #[test]
@@ -506,12 +453,17 @@ fn test_apply_city() {
 
     let mut config = Config::default();
     apply_city(&mut config, city);
-    match &config.provider {
-        ProviderConfig::Calculation(c) => {
-            assert_eq!(c.location, format!("{}, {}", city.city, city.country));
-            assert_eq!(c.coordinates.latitude, city.latitude);
-            assert_eq!(c.coordinates.longitude, city.longitude);
-        }
-        ProviderConfig::Data(_) => panic!("provider should stay calculation"),
-    }
+    assert_eq!(config.calculation.location, format!("{}, {}", city.city, city.country));
+    assert_eq!(config.coordinates.latitude, city.latitude);
+    assert_eq!(config.coordinates.longitude, city.longitude);
+}
+
+#[test]
+fn test_island_popup_entries() {
+    let entries = popup_entries(PopupKind::Island, "");
+    assert_eq!(entries.len(), ISLAND_DATA.len());
+    assert!(entries.iter().any(|e| matches!(
+        e,
+        PopupEntry::Island(key) if key == DEFAULT_MV_ISLAND_KEY
+    )));
 }

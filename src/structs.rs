@@ -9,6 +9,7 @@ pub mod input;
 use salah::NaiveDate;
 
 use crate::{mv_dataset::TimeSetData, salah_calc::SalahCalcConfig, Screen, SettingsState};
+use crate::{timeset_for_island, DEFAULT_MV_ISLAND_KEY};
 
 const NOTIF_PRAYERS: [&str; 6] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
@@ -63,23 +64,42 @@ impl Provider {
 
 impl AppState {
     pub fn init_provider(&mut self) {
-        self.provider = match &self.config.provider {
-            ProviderConfig::Data(data) => {
-                let new_timeset = TimeSetData::load(data).unwrap(); // HACK: unwrap;
-                Provider::DataSet(new_timeset)
+        let (provider, warning) = match self.config.provider {
+            ProviderKind::Calculation => {
+                let method = self.config.calculation.method.to_runtime_config();
+                let madhab = self.config.calculation.madhab.to_runtime_config();
+                let coordinates = self.config.coordinates.to_runtime_config();
+                (Provider::Calculation(SalahCalcConfig::new(method, madhab, coordinates)), None)
             }
-            ProviderConfig::Calculation(calculation_config) => {
-                let method = calculation_config.method.to_runtime_config();
-                let madhab = calculation_config.madhab.to_runtime_config();
-                let coordinates = calculation_config.coordinates.to_runtime_config();
-                let salah_calc_config = SalahCalcConfig::new(method, madhab, coordinates);
-
-                Provider::Calculation(salah_calc_config)
-                
+            ProviderKind::SalatMv => {
+                match timeset_for_island(&self.config.salatmv.island) {
+                    Some(timeset) => (Provider::DataSet(timeset), None),
+                    None => {
+                        // unknown island in config: fall back instead of crashing
+                        let requested = self.config.salatmv.island.clone();
+                        match timeset_for_island(DEFAULT_MV_ISLAND_KEY) {
+                            Some(timeset) => (
+                                Provider::DataSet(timeset),
+                                Some(format!("unknown island \"{requested}\", using {DEFAULT_MV_ISLAND_KEY}")),
+                            ),
+                            None => {
+                                let method = Method::default().to_runtime_config();
+                                let madhab = Madhab::default().to_runtime_config();
+                                let coordinates = Coords::default().to_runtime_config();
+                                (
+                                    Provider::Calculation(SalahCalcConfig::new(method, madhab, coordinates)),
+                                    Some("salatmv data unavailable".to_string()),
+                                )
+                            }
+                        }
+                    }
+                }
             }
-
         };
-        
+        self.provider = provider;
+        if warning.is_some() {
+            self.message = warning;
+        }
     }
     pub fn get_prayer_times(&self) -> PrayerTimes{
         let date: NaiveDate = self.get_offset_date();
