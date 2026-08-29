@@ -10,43 +10,24 @@ trait PTDataParse {
 impl PTDataParse for String{
     fn parse_for_island(self) -> Vec<Vec<u32>>{
 
-        // split by line for each valid data
-        let mut grouped :Vec<&str> = self.split('\n').collect();
-        grouped.pop(); // remove last line
-        grouped.reverse();
-        grouped.pop(); // remove first line
-        grouped.reverse();
-        
-        
-        // let mut full_list: [[u32; 8]; 15372];
+        // ptdata.csv starts with an "island;day;..." header row;
+        // lines() handles both LF and CRLF line endings
         let mut full_list: Vec<Vec<u32>> = vec![];
-        
-        // split by column for each valid data
-        for group in grouped.iter(){
-            let columns: Vec<u32> = group.split(';').map(|x| x.parse::<u32>().unwrap_or(0)).collect();
-            
-            // skip irrelevant data
-            // if island_index != columns[0]{
-                // continue;
-            // }
-            
-            let result = columns;
-            // let mut result : PrayerData = PrayerData { island_index: (0), day: (0), fajr: (0), sun: (0), dhuhur: (0), asr: (0), magrib: (0), isha: (0) };
-            
-            // result.island_set_from_vec(columns.iter().map(|x| x.parse::<u32>().unwrap()).collect());
-            full_list.append(&mut vec![result]);
+        for group in self.lines().skip(1) {
+            let columns: Vec<u32> = group
+                .split(';')
+                .map(|x| x.trim().parse::<u32>().unwrap_or(0))
+                .collect();
+            full_list.push(columns);
         }
-        
-        full_list   
+        full_list
     }
 }
 
 fn get_vec_from_db(db: &str) -> Vec<String> {
-    let mut grouped: Vec<&str> = db.split('\n').collect();
-    grouped.pop();
-    grouped
-        .iter()
-        .map(|x| x.parse::<String>().unwrap())
+    db.lines()
+        .map(|x| x.trim_end_matches('\r').to_string())
+        .filter(|l| !l.is_empty())
         .collect()
 }
 
