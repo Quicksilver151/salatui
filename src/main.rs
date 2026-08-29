@@ -127,12 +127,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app_state: &mut AppState) -> 
         // InputMap
         app_state.input_map.reset();
         app_state.input_char = char::default();
-        if event::poll(Duration::from_millis(1000))?
-            && let Event::Key(key) = event::read()?
-        {
-            app_state.input_map.map_inputs(key);
-            if let Some(c) = app_state.input_map.get_raw_char() {
-                app_state.input_char = c;
+        if event::poll(Duration::from_millis(1000))? {
+            match event::read()? {
+                Event::Key(key) => {
+                    app_state.input_map.map_inputs(key);
+                    if let Some(c) = app_state.input_map.get_raw_char() {
+                        app_state.input_char = c;
+                    }
+                }
+                Event::Mouse(mouse) => handle_mouse_event(app_state, mouse),
+                _ => {}
             }
         }
         // dbg!(&input_map);

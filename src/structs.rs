@@ -8,10 +8,21 @@ pub mod input;
 
 use salah::NaiveDate;
 
-use crate::{mv_dataset::TimeSetData, salah_calc::SalahCalcConfig, Screen, SettingsState};
+use crate::{mv_dataset::TimeSetData, salah_calc::SalahCalcConfig, Rect, Screen, SettingsState};
 use crate::{timeset_for_island, DEFAULT_MV_ISLAND_KEY};
 
 const NOTIF_PRAYERS: [&str; 6] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+/// last-known layout rects for mouse support; populated each frame during draw
+#[derive(Debug, Default)]
+pub struct UiMouse {
+    /// settings split panes: [sections, fields]
+    pub settings_panes: [Rect; 2],
+    /// whole popup window, for click-outside detection
+    pub popup_rect: Rect,
+    /// popup entry list area, for click to select/apply
+    pub popup_list: Rect,
+}
 
 #[derive(Debug, Default)]
 pub struct NotifState {
@@ -33,6 +44,7 @@ pub struct AppState {
     pub notif: NotifState,
     pub settings: SettingsState,
     pub message: Option<String>,
+    pub ui_mouse: UiMouse,
 }
 // Struct Provider
 // - Provider

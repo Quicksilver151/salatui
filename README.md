@@ -42,8 +42,8 @@ salatui --output        # print today's times once and exit, then quit
 salatui --config path   # use a specific config file
 ```
 
-The configuration file lives at `~/.config/salatui/config-dev.toml`
-(dev builds) / `config.toml` (releases), and can be edited in-app or by hand.
+The configuration file lives at `~/.config/salatui/config-dev.toml` and can
+be edited in-app or by hand.
 
 ## Features
 
@@ -56,7 +56,11 @@ The configuration file lives at `~/.config/salatui/config-dev.toml`
 
 ### Interface
 
-- Full TUI with mouse and keyboard input (menu + settings screens)
+- Full TUI for menu + settings screens with keyboard and mouse input
+  - Mouse: scroll the wheel to change the day (menu); in settings, click a
+    section or field to select it and click it again to use it (cycle fields:
+    left click forward, right click backward); right-click empty space to go
+    back to the menu
 - Day navigation with `←`/`→`, month navigation with `Shift`+`←`/`→`
 - Current-prayer indicator, live clock with seconds, configurable location line
 - Settings editor with live autosave and instant provider reload

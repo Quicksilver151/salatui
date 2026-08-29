@@ -1,6 +1,8 @@
 use super::*;
+use crate::event;
 use crate::structs::input::Key;
 pub use state::*;
+
 
 mod state;
 
@@ -37,6 +39,7 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(22), Constraint::Min(20)])
         .split(area);
+    app_state.ui_mouse.settings_panes[0] = panes[0];
 
     let cat_items: Vec<ListItem> = CATEGORIES
         .iter()
@@ -58,6 +61,7 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
             Constraint::Min(5),
         ])
         .split(panes[1]);
+    app_state.ui_mouse.settings_panes[1] = right[2];
 
     let title = Paragraph::new(CATEGORIES[app_state.settings.category])
         .block(new_color_block("", Color::Green).title_alignment(Alignment::Center))
@@ -114,15 +118,16 @@ pub fn draw_settings(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIS
     let field_list = List::new(items).block(new_color_block("", Color::Green));
     f.render_widget(field_list, right[2]);
 
-    if let SettingsMode::Popup { kind, cursor, offset, filter } = &app_state.settings.mode {
-        draw_popup(f, area, *kind, *cursor, *offset, filter);
+    if let Some((kind, cursor, offset, filter)) = popup_mode_snapshot(app_state) {
+        draw_popup(f, app_state, area, kind, cursor, offset, &filter);
     }
 }
 
-fn draw_popup(f: &mut Frame, area: Rect, kind: PopupKind, cursor: usize, mut offset: usize, filter: &str) {
+fn draw_popup(f: &mut Frame, app_state: &mut AppState, area: Rect, kind: PopupKind, cursor: usize, mut offset: usize, filter: &str) {
     let entries = popup_entries(kind, filter);
 
     let popup = centered_rect(area, 60, 16);
+    app_state.ui_mouse.popup_rect = popup;
     f.render_widget(Clear, popup);
 
     let title = match kind {
@@ -163,6 +168,7 @@ fn draw_popup(f: &mut Frame, area: Rect, kind: PopupKind, cursor: usize, mut off
         .collect();
 
     let list = List::new(items).block(new_color_block(&title, Color::Cyan));
+    app_state.ui_mouse.popup_list = rows[1];
     f.render_widget(list, rows[1]);
 }
 
@@ -224,6 +230,210 @@ pub fn handle_settings_key(app_state: &mut AppState) -> bool {
         handle_normal_key(app_state, key);
     }
     true
+}
+
+// mouse ============================================
+
+/// global mouse dispatch, called from the main event loop
+pub fn handle_mouse_event(app_state: &mut AppState, mouse: event::MouseEvent) {
+    let (column, row) = (mouse.column, mouse.row);
+    match mouse.kind {
+        event::MouseEventKind::ScrollDown if app_state.screen == Screen::Menu => {
+            app_state.day_offset += 1;
+        }
+        event::MouseEventKind::ScrollUp if app_state.screen == Screen::Menu => {
+            app_state.day_offset -= 1;
+        }
+        event::MouseEventKind::ScrollDown if app_state.screen == Screen::Settings => {
+            settings_scroll(app_state, 1);
+        }
+        event::MouseEventKind::ScrollUp if app_state.screen == Screen::Settings => {
+            settings_scroll(app_state, -1);
+        }
+        event::MouseEventKind::Down(event::MouseButton::Right) if app_state.screen == Screen::Menu => {
+            app_state.screen = Screen::Settings;
+        }
+        event::MouseEventKind::Down(event::MouseButton::Left) if app_state.screen == Screen::Settings => {
+            handle_settings_click(app_state, column, row);
+        }
+        event::MouseEventKind::Down(event::MouseButton::Right) if app_state.screen == Screen::Settings => {
+            handle_settings_right_click(app_state, column, row);
+        }
+        _ => {}
+    }
+}
+
+/// wheel moves the picker cursor (scroll), or the focused field in normal mode;
+/// offset follows automatically at draw time
+fn settings_scroll(app_state: &mut AppState, delta: isize) {
+    match &app_state.settings.mode {
+        SettingsMode::Popup { kind, cursor, offset, filter } => {
+            let (kind, cursor, offset, filter) = (*kind, *cursor, *offset, filter.clone());
+            let len = popup_entries(kind, &filter).len();
+            let max = len.saturating_sub(1);
+            let next = if delta > 0 { (cursor + 1).min(max) } else { cursor.saturating_sub(1).min(max) };
+            store_popup(app_state, kind, next, offset, filter);
+        }
+        SettingsMode::Normal => {
+            let row_count = fields_for(app_state.settings.category, &app_state.config).len();
+            if row_count == 0 {
+                return;
+            }
+            if delta > 0 {
+                app_state.settings.cursor = (app_state.settings.cursor + 1).min(row_count - 1);
+            } else {
+                app_state.settings.cursor = app_state.settings.cursor.saturating_sub(1);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// right-click: on a selected cycling field steps backwards; on empty space
+/// returns to the main menu; unselected fields only get selected, other
+/// buttons are a no-op
+fn handle_settings_right_click(app_state: &mut AppState, column: u16, row: u16) {
+    if !matches!(app_state.settings.mode, SettingsMode::Normal) {
+        return;
+    }
+    let panes = app_state.ui_mouse.settings_panes;
+    // on a real field row: select first, act on the selected field
+    if let Some(vis) = row_in_rect(column, row, panes[1]) {
+        let rows = fields_for(app_state.settings.category, &app_state.config);
+        let index = app_state.settings.offset + vis;
+        if index < rows.len() {
+            if app_state.settings.cursor == index && matches!(rows[index].kind, FieldKind::Cycle) {
+                edit_current(app_state, -1);
+            } else {
+                app_state.settings.cursor = index;
+            }
+            return;
+        }
+        // empty space below the fields is not a button -> fall through
+    }
+    // section rows are buttons too
+    if row_in_rect(column, row, panes[0]).is_some() {
+        return;
+    }
+    // nothing interactive under the pointer -> back to the main screen
+    app_state.screen = Screen::Menu;
+}
+
+fn handle_settings_click(app_state: &mut AppState, column: u16, row: u16) {
+    if matches!(app_state.settings.mode, SettingsMode::Popup { .. }) {
+        handle_popup_click(app_state, column, row);
+        return;
+    }
+    if matches!(app_state.settings.mode, SettingsMode::TextInput { .. }) {
+        handle_text_click(app_state, column, row);
+        return;
+    }
+
+    let panes = app_state.ui_mouse.settings_panes;
+    // left pane: sections
+    if let Some(cat) = row_in_rect(column, row, panes[0]) {
+        if cat < CATEGORIES.len() {
+            app_state.settings.category = cat;
+            app_state.settings.cursor = 0;
+        }
+        return;
+    }
+    // right pane: fields -> a click selects the field; clicking the already
+    // selected (highlighted) field activates it
+    if let Some(vis) = row_in_rect(column, row, panes[1]) {
+        let len = fields_for(app_state.settings.category, &app_state.config).len();
+        let index = app_state.settings.offset + vis;
+        if index < len {
+            if app_state.settings.cursor == index {
+                activate_current(app_state);
+            } else {
+                app_state.settings.cursor = index;
+            }
+        }
+    }
+}
+
+/// clicks while editing a text field: anything outside the edited field
+/// exits edit mode
+fn handle_text_click(app_state: &mut AppState, column: u16, row: u16) {
+    let editing = match &app_state.settings.mode {
+        SettingsMode::TextInput { field, .. } => *field,
+        _ => return,
+    };
+    let fields = app_state.ui_mouse.settings_panes[1];
+    let clicked = row_in_rect(column, row, fields).map(|vis| {
+        let len = fields_for(app_state.settings.category, &app_state.config).len();
+        let index = app_state.settings.offset + vis;
+        if index < len {
+            Some(index)
+        } else {
+            None
+        }
+    });
+    let clicked = clicked.flatten().and_then(|index| {
+        let rows = fields_for(app_state.settings.category, &app_state.config);
+        rows.get(index).map(|r| (index, r.id))
+    });
+    // clicking the currently-edited field keeps editing
+    if clicked.is_some_and(|(_, id)| id == editing) {
+        return;
+    }
+    app_state.settings.mode = SettingsMode::Normal;
+    if let Some((index, _)) = clicked {
+        app_state.settings.cursor = index;
+    }
+}
+
+fn handle_popup_click(app_state: &mut AppState, column: u16, row: u16) {
+    let Some((kind, cursor, offset, filter)) = popup_mode_snapshot(app_state) else {
+        return;
+    };
+    // click outside the popup window closes it
+    if !in_rect(column, row, app_state.ui_mouse.popup_rect) {
+        app_state.settings.mode = SettingsMode::Normal;
+        return;
+    }
+    let Some(vis) = row_in_rect(column, row, app_state.ui_mouse.popup_list) else {
+        return;
+    };
+    let len = popup_entries(kind, &filter).len();
+    let index = offset + vis;
+    if index >= len {
+        return;
+    }
+    if index == cursor {
+        // already-selected entry applies
+        apply_popup(app_state, kind, index, offset, filter);
+    } else {
+        store_popup(app_state, kind, index, offset, filter);
+    }
+}
+
+fn popup_mode_snapshot(app_state: &AppState) -> Option<(PopupKind, usize, usize, String)> {
+    match &app_state.settings.mode {
+        SettingsMode::Popup { kind, cursor, offset, filter } => {
+            Some((*kind, *cursor, *offset, filter.clone()))
+        }
+        _ => None,
+    }
+}
+
+/// click index within a widget's inner area (border excluded), or None
+fn row_in_rect(x: u16, y: u16, area: Rect) -> Option<usize> {
+    if !in_rect(x, y, area) {
+        return None;
+    }
+    let top = area.y + 1;
+    let bottom = area.y + area.height.saturating_sub(1);
+    if y >= top && y < bottom {
+        Some((y - top) as usize)
+    } else {
+        None
+    }
+}
+
+fn in_rect(x: u16, y: u16, r: Rect) -> bool {
+    x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height
 }
 
 fn handle_normal_key(app_state: &mut AppState, (key, modifier): (Key, crate::structs::input::Modifier)) {
@@ -433,5 +643,275 @@ fn after_change(app_state: &mut AppState, provider_changed: bool) {
     }
     if let Err(err) = app_state.config.save() {
         app_state.message = Some(format!("save failed: {err}"));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn row_in_rect_boundaries() {
+        let area = Rect { x: 10, y: 5, width: 20, height: 8 };
+        // horizontally outside
+        assert_eq!(row_in_rect(9, 6, area), None);
+        assert_eq!(row_in_rect(30, 6, area), None);
+        // borders excluded
+        assert_eq!(row_in_rect(11, 5, area), None);
+        assert_eq!(row_in_rect(11, 12, area), None); // bottom border
+        assert_eq!(row_in_rect(11, 13, area), None); // beyond
+        // content rows
+        assert_eq!(row_in_rect(11, 6, area), Some(0));
+        assert_eq!(row_in_rect(11, 9, area), Some(3));
+    }
+
+    #[test]
+    fn click_below_fields_selects_nothing() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        let len = fields_for(0, &app.config).len();
+        // map a click far below the last visible row
+        let y = app.ui_mouse.settings_panes[1].y + 1 + len as u16 + 20;
+        handle_settings_click(&mut app, 30, y);
+        assert_eq!(app.settings.cursor, 0);
+        assert_eq!(app.settings.mode, SettingsMode::Normal);
+    }
+
+    #[test]
+    fn fields_rect_offset_maps_rows() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 6, width: 50, height: 20 },
+        ];
+        // simulate a 3-row title + message shifting the fields list down
+        app.settings.category = 0;
+        // click the first actual field row (index 0 = "type")
+        handle_settings_click(&mut app, 40, 7);
+        assert_eq!(app.settings.cursor, 0);
+    }
+
+    #[test]
+    fn edit_mode_exits_on_outside_click() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.mode = SettingsMode::TextInput {
+            field: FieldId::RawCustomString,
+            buffer: "x".into(),
+        };
+        // click on the sections pane (outside the field list)
+        handle_settings_click(&mut app, 5, 2);
+        assert_eq!(app.settings.mode, SettingsMode::Normal);
+    }
+
+    #[test]
+    fn edit_mode_kept_on_same_field_click() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        let index = app.settings.cursor;
+        let id = fields_for(0, &app.config)[index].id;
+        app.settings.mode = SettingsMode::TextInput {
+            field: id,
+            buffer: "35.5".into(),
+        };
+        // click back on the same field row
+        let y = app.ui_mouse.settings_panes[1].y + 1 + index as u16;
+        handle_settings_click(&mut app, 40, y);
+        assert!(matches!(app.settings.mode, SettingsMode::TextInput { .. }));
+    }
+
+    #[test]
+    fn picker_wheel_scrolls() {
+        let mut app = AppState::default();
+        open_picker(&mut app, PopupKind::Location);
+        settings_scroll(&mut app, 1);
+        let SettingsMode::Popup { cursor, offset, .. } = &app.settings.mode else {
+            panic!("expected popup");
+        };
+        assert_eq!((*cursor, *offset), (1, 0));
+        settings_scroll(&mut app, -1);
+        settings_scroll(&mut app, -1);
+        let SettingsMode::Popup { cursor, .. } = &app.settings.mode else {
+            panic!("expected popup");
+        };
+        assert_eq!(*cursor, 0);
+    }
+
+    #[test]
+    fn right_click_selects_then_reverses() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        // madhab is field index 3
+        let y = app.ui_mouse.settings_panes[1].y + 1 + 3;
+        let before = app.config.calculation.madhab;
+        // right-click on an unselected field only selects it
+        handle_settings_right_click(&mut app, 40, y);
+        assert_eq!(app.settings.cursor, 3);
+        assert_eq!(app.config.calculation.madhab, before);
+        // right-click on the now-selected field reverses the cycle
+        handle_settings_right_click(&mut app, 40, y);
+        // a backward step from before cycles to the other variant, and
+        // stepping forward again restores it (2-variant madhab)
+        let after = app.config.calculation.madhab;
+        assert_ne!(after, before);
+        FieldId::ProviderMadhab.cycle(&mut app.config, 1);
+        assert_eq!(app.config.calculation.madhab, before);
+    }
+
+    #[test]
+    fn right_click_selects_unhighlighted_non_cycle() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        // latitude is a text field (index 4)
+        let y = app.ui_mouse.settings_panes[1].y + 1 + 4;
+        let lat_before = app.config.coordinates.latitude;
+        handle_settings_right_click(&mut app, 40, y);
+        // select-only: cursor moves, nothing edits
+        assert_eq!(app.settings.cursor, 4);
+        assert_eq!(app.config.coordinates.latitude, lat_before);
+        assert_eq!(app.settings.mode, SettingsMode::Normal);
+        // right-click on the already-selected (non-cycle) field is a no-op
+        handle_settings_right_click(&mut app, 40, y);
+        assert_eq!(app.settings.cursor, 4);
+        assert_eq!(app.config.coordinates.latitude, lat_before);
+        assert_eq!(app.settings.mode, SettingsMode::Normal);
+    }
+
+    #[test]
+    fn click_twice_activates_cycle() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        // method is a cycle field (index 2)
+        let y = app.ui_mouse.settings_panes[1].y + 1 + 2;
+        let before = app.config.calculation.method;
+        // first click selects only
+        handle_settings_click(&mut app, 40, y);
+        assert_eq!(app.settings.cursor, 2);
+        assert_eq!(app.config.calculation.method, before);
+        // clicking the already-selected field activates (cycles forward)
+        handle_settings_click(&mut app, 40, y);
+        assert_ne!(app.config.calculation.method, before);
+    }
+
+    #[test]
+    fn click_twice_edits_text() {
+        let mut app = AppState::default();
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        // latitude is a text field (index 4)
+        let y = app.ui_mouse.settings_panes[1].y + 1 + 4;
+        handle_settings_click(&mut app, 40, y);
+        assert!(matches!(app.settings.mode, SettingsMode::Normal));
+        handle_settings_click(&mut app, 40, y);
+        assert!(matches!(app.settings.mode, SettingsMode::TextInput { .. }));
+    }
+
+    #[test]
+    fn menu_right_click_opens_config() {
+        let mut app = AppState::default();
+        app.screen = Screen::Menu;
+        handle_mouse_event(
+            &mut app,
+            event::MouseEvent {
+                kind: event::MouseEventKind::Down(event::MouseButton::Right),
+                column: 10,
+                row: 10,
+                modifiers: event::KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.screen, Screen::Settings);
+    }
+
+    #[test]
+    fn settings_right_click_empty_goes_back() {
+        let mut app = AppState::default();
+        app.screen = Screen::Settings;
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        // click the title/border area (above the field list)
+        handle_mouse_event(
+            &mut app,
+            event::MouseEvent {
+                kind: event::MouseEventKind::Down(event::MouseButton::Right),
+                column: 30,
+                row: 1,
+                modifiers: event::KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.screen, Screen::Menu);
+    }
+
+    #[test]
+    fn settings_right_click_empty_space_below_fields_goes_back() {
+        let mut app = AppState::default();
+        app.screen = Screen::Settings;
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 30 },
+            Rect { x: 21, y: 1, width: 50, height: 30 },
+        ];
+        app.settings.category = 0;
+        let len = fields_for(0, &app.config).len();
+        // right-click well below the last field, still inside the fields pane
+        let y = app.ui_mouse.settings_panes[1].y + 1 + len as u16 + 15;
+        handle_mouse_event(
+            &mut app,
+            event::MouseEvent {
+                kind: event::MouseEventKind::Down(event::MouseButton::Right),
+                column: 50,
+                row: y,
+                modifiers: event::KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.screen, Screen::Menu);
+    }
+
+    #[test]
+    fn settings_right_click_on_button_is_noop() {
+        let mut app = AppState::default();
+        app.screen = Screen::Settings;
+        app.ui_mouse.settings_panes = [
+            Rect { x: 0, y: 1, width: 20, height: 20 },
+            Rect { x: 21, y: 1, width: 50, height: 20 },
+        ];
+        app.settings.category = 0;
+        // right-click a section row -> no-op (stays in settings)
+        handle_mouse_event(
+            &mut app,
+            event::MouseEvent {
+                kind: event::MouseEventKind::Down(event::MouseButton::Right),
+                column: 10,
+                row: 4,
+                modifiers: event::KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.screen, Screen::Settings);
     }
 }
