@@ -1,6 +1,6 @@
 [package]
 name = "salatui"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "A terminal UI for Islamic prayer times (calculation + built-in Maldives dataset)"
 license = "Apache-2.0"
