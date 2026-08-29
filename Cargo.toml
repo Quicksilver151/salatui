@@ -1,12 +1,16 @@
 [package]
 name = "salatui"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+description = "A terminal UI for Islamic prayer times (calculation + built-in Maldives dataset)"
+license = "Apache-2.0"
+repository = "https://github.com/Quicksilver151/salatui"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.release]
 strip = true
+lto = true
 
 [dependencies]
 arboard = "3.2.0"

@@ -1,0 +1,54 @@
+name: Release
+permissions:
+  contents: read
+on:
+  push:
+    tags:
+      - v[0-9]+.*
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: taiki-e/create-gh-release-action@v1
+
+  upload-assets:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # linux: glibc floor of 2.17 -> binaries run on any glibc >= 2.17
+          - target: x86_64-unknown-linux-gnu.2.17
+            os: ubuntu-latest
+            build-tool: cargo-zigbuild
+          - target: aarch64-unknown-linux-gnu.2.17
+            os: ubuntu-latest
+            build-tool: cargo-zigbuild
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            build-tool: cargo
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            build-tool: cargo
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            build-tool: cargo
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: taiki-e/install-action@v2
+        if: matrix.build-tool == 'cargo-zigbuild'
+        with:
+          tool: cargo-zigbuild
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: salatui
+          target: ${{ matrix.target }}
+          build-tool: ${{ matrix.build-tool }}
+          asset: LICENSE,README.md,NOTICE

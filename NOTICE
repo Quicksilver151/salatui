@@ -1,0 +1,13 @@
+salatui
+
+Copyright 2026
+
+This product includes geographic data derived from GeoNames
+(https://www.geonames.org/), in particular the cities15000 and countryInfo
+datasets, licensed under the Creative Commons Attribution 4.0 International
+license (https://creativecommons.org/licenses/by/4.0/).
+
+The Maldivian prayer-times dataset (data/atolls.csv, data/islands.csv,
+data/ptdata.csv) was originally sourced from the SalatMV Android
+application (https://jamiyyathsalaf.com/salatmv) and is redistributed
+here under the terms of the Apache License 2.0.
