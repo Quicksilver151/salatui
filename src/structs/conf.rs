@@ -245,7 +245,7 @@ impl Default for RawOutput {
 
 // CONSTS
 
-const CONFIG_NAME: &str = "config-dev";
+const CONFIG_NAME: &str = "config";
 
 
 /// flat schema: every section persists independently, `provider` only selects
@@ -292,7 +292,16 @@ impl Config {
 
     
     pub fn save(&self) -> Result<(), confy::ConfyError> {
-        confy::store("salatui", CONFIG_NAME, self)
+        #[cfg(test)]
+        {
+            // unit tests run in parallel and never write the real config
+            let _ = self;
+            Ok(())
+        }
+        #[cfg(not(test))]
+        {
+            confy::store("salatui", CONFIG_NAME, self)
+        }
     }
     
 }

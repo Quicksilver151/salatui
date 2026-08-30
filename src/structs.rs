@@ -255,8 +255,8 @@ impl PrayerTimes {
         
         match config.raw_output.mode {
             RawOutputMode::Array   => format!("{:?}", time_list),
-            RawOutputMode::Custom  => todo!(),
-            RawOutputMode::TOML    => todo!(),
+            RawOutputMode::Custom  => self.format_custom_string(config),
+            RawOutputMode::TOML    => self.to_toml(config),
             RawOutputMode::PrettyJson => to_json(time_list, true),
             RawOutputMode::Json    => to_json(time_list, false),
             RawOutputMode::RawData => {
@@ -273,10 +273,126 @@ impl PrayerTimes {
         }
         // let 
     }
+
+    /// expand the raw_output `custom_string` template.
+    ///
+    /// tokens are `%` + code + optional format suffix. codes: `f s d a m i`
+    /// (prayer times), `c` (current index), `e` (entry index), `y` (day).
+    /// a bare code yields the full time in `display.format`; a suffix is
+    /// `h`(12h hour) `H`(24h hour) `m`(minutes) `p`(AM/PM) `M`(raw minutes)
+    /// `t`(full time); any other char is emitted literally. `%` followed by an
+    /// unknown or missing code is passed through literally.
+    pub fn format_custom_string(&self, config: &Config) -> String {
+        let custom = &config.raw_output.custom_string;
+        let mut out = String::new();
+        let mut rest = custom.as_str();
+        while let Some(idx) = rest.find('%') {
+            out.push_str(&rest[..idx]);
+            rest = &rest[idx + 1..];
+            let Some(code) = rest.chars().next() else {
+                out.push('%');
+                break;
+            };
+            rest = &rest[code.len_utf8()..];
+            let value = match code {
+                'f' => Some(CustomValue::Time(self.fajr)),
+                's' => Some(CustomValue::Time(self.sun)),
+                'd' => Some(CustomValue::Time(self.dhuhur)),
+                'a' => Some(CustomValue::Time(self.asr)),
+                'm' => Some(CustomValue::Time(self.magrib)),
+                'i' => Some(CustomValue::Time(self.isha)),
+                'c' => Some(CustomValue::Text(self.get_current_index().to_string())),
+                'e' => Some(CustomValue::Text(self.index.to_string())),
+                'y' => Some(CustomValue::Text(self.day.to_string())),
+                _ => None,
+            };
+            let Some(value) = value else {
+                out.push('%');
+                out.push(code);
+                continue;
+            };
+            let end = rest.find('%').unwrap_or(rest.len());
+            let suffix = &rest[..end];
+            rest = &rest[end..];
+            match value {
+                CustomValue::Time(minutes) => out.push_str(&apply_suffix(minutes, suffix, config)),
+                CustomValue::Text(text) => {
+                    out.push_str(&text);
+                    out.push_str(suffix);
+                }
+            }
+        }
+        out.push_str(rest);
+        out
+    }
+
+    /// TOML output: `index`/`day`/`current` as bare integers, prayer times as
+    /// bare strings formatted per `display.format`.
+    pub fn to_toml(&self, config: &Config) -> String {
+        let t = self.format_time(config);
+        format!(
+            "index = {}\nday = {}\nfajr = \"{}\"\nsun = \"{}\"\ndhuhur = \"{}\"\nasr = \"{}\"\nmagrib = \"{}\"\nisha = \"{}\"\ncurrent = {}",
+            self.index,
+            self.day,
+            t[0],
+            t[1],
+            t[2],
+            t[3],
+            t[4],
+            t[5],
+            self.get_current_index(),
+        )
+    }
 }
 
 fn to_time(minutes: &u32) -> (u32, u32){
     (minutes / 60, minutes % 60)
+}
+
+enum CustomValue {
+    Time(u32),
+    Text(String),
+}
+
+/// 12-hour clock hour, matching the `Twelve` display format (0 stays 0)
+fn hour_12(minutes: u32) -> u32 {
+    let h = minutes / 60;
+    if h > 12 { h % 12 } else { h }
+}
+
+/// one prayer time in the current `display.format`
+fn format_minute(minutes: u32, config: &Config) -> String {
+    let (hour, minute) = to_time(&minutes);
+    match config.display.format {
+        TimeFormat::Twelve => format!(
+            "{:0>2}:{:0>2} {}",
+            hour_12(minutes),
+            minute,
+            if hour > 11 { "PM" } else { "AM" }
+        ),
+        TimeFormat::TwentyFour => format!("{:0>2}:{:0>2}", hour, minute),
+        TimeFormat::Minutes => minutes.to_string(),
+    }
+}
+
+fn apply_suffix(minutes: u32, suffix: &str, config: &Config) -> String {
+    if suffix.is_empty() {
+        return format_minute(minutes, config);
+    }
+    let hour = minutes / 60;
+    let mut out = String::new();
+    for c in suffix.chars() {
+        match c {
+            'h' => out.push_str(&format!("{:0>2}", hour_12(minutes))),
+            'H' => out.push_str(&format!("{:0>2}", hour)),
+            'm' => out.push_str(&format!("{:0>2}", minutes % 60)),
+            'p' => out.push_str(if hour > 11 { " PM" } else { " AM" }),
+            'M' => out.push_str(&minutes.to_string()),
+            't' => out.push_str(&format_minute(minutes, config)),
+            other => out.push(other),
+        }
+    }
+    out
 }
 
 fn to_json(time_list: Vec<String>, pretty: bool) -> String {
@@ -335,6 +451,69 @@ fn test_format() {
 
     assert_eq!(expected, result);
     assert_eq!(expected2,result2);
+}
+
+#[test]
+fn test_custom_format_default_string() {
+    let value = PrayerTimes { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let mut config = Config::default();
+    config.display.format = TimeFormat::Twelve;
+    config.raw_output.mode = RawOutputMode::Custom;
+    config.raw_output.custom_string = "[%fh:mp, %sh:mp, %dh:mp, %ah:mp, %mh:mp, %ih:mp]".into();
+    assert_eq!(
+        value.output_format(&config),
+        "[04:53 AM, 06:05 AM, 12:16 PM, 03:32 PM, 06:18 PM, 07:31 PM]"
+    );
+}
+
+#[test]
+fn test_custom_format_tokens() {
+    let value = PrayerTimes { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let mut config = Config::default();
+    config.display.format = TimeFormat::TwentyFour;
+    config.raw_output.mode = RawOutputMode::Custom;
+
+    config.raw_output.custom_string = "%e-%y %fM %st %m".into();
+    assert_eq!(value.output_format(&config), "77-225 293 06:05 18:18");
+
+    config.raw_output.custom_string = "at %sh:m and %dH".into();
+    assert_eq!(value.output_format(&config), "at 06:05 and 12");
+
+    config.raw_output.custom_string = "%dH:%dm:%dp".into();
+    config.display.format = TimeFormat::Minutes;
+    assert_eq!(value.output_format(&config), "12:16: PM");
+}
+
+#[test]
+fn test_toml_mode() {
+    let value = PrayerTimes { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let mut config = Config::default();
+    config.display.format = TimeFormat::TwentyFour;
+    config.raw_output.mode = RawOutputMode::TOML;
+
+    let out = value.output_format(&config);
+    let mut lines = out.lines();
+    assert_eq!(lines.next(), Some("index = 77"));
+    assert_eq!(lines.next(), Some("day = 225"));
+    assert_eq!(lines.next(), Some("fajr = \"04:53\""));
+    assert_eq!(lines.next(), Some("sun = \"06:05\""));
+    assert_eq!(lines.next(), Some("dhuhur = \"12:16\""));
+    assert_eq!(lines.next(), Some("asr = \"15:32\""));
+    assert_eq!(lines.next(), Some("magrib = \"18:18\""));
+    assert_eq!(lines.next(), Some("isha = \"19:31\""));
+    assert!(lines.next().unwrap().starts_with("current = "));
+}
+
+#[test]
+fn test_toml_minutes_format() {
+    let value = PrayerTimes { index: 77, day: 225, fajr: 293, sun: 365, dhuhur: 736, asr: 932, magrib: 1098, isha: 1171 };
+    let mut config = Config::default();
+    config.display.format = TimeFormat::Minutes;
+    config.raw_output.mode = RawOutputMode::TOML;
+
+    let out = value.output_format(&config);
+    assert!(out.contains("fajr = \"293\""));
+    assert!(out.contains("isha = \"1171\""));
 }
 
 #[test]

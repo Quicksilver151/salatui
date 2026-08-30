@@ -78,7 +78,7 @@ A TUI application to show and manage islamic prayer times.
 - Timezone: system-local only, no config option. Display and internal logic share `Local::now()`.
 - Notifications: notify-rust (dbus on linux); failures print to stderr, which is invisible under the TUI.
 - Data flow: UI receives data and renders only; all processing/state mutation happens in `run_app` (`main.rs`).
-- Storage: confy — config at `~/.config/salatui/` (`config-dev.toml` in dev builds). salatmv data is embedded in the binary via build.rs; legacy disk datasets at `~/.local/share/salatui/` (load/save kept but unused).
+- Storage: confy — config at `~/.config/salatui/config.toml`. salatmv data is embedded in the binary via build.rs; legacy disk datasets at `~/.local/share/salatui/` (load/save kept but unused).
 - Location picker: GeoNames `cities15000.txt` + `countryInfo.txt` live in `data/`; build.rs joins them into `OUT_DIR/geonames.rs` (`CITIES: &[[&str; 4]]` = name/country/lat/lon, sorted by country then city) included via `src/data.rs`. Data from download.geonames.org, licensed CC-BY 4.0.
 - Popup filtering: `fuzzy()` in settings state — case-insensitive subsequence (order-sensitive, no scoring/ranking); matches city or country for locations, island key for islands.
 - Releases: `cargo publish` manually (0.2.0, needs publish metadata set), then tag `v0.2.0` → GitHub Actions builds + uploads binstall-compatible binaries (Linux x86_64/aarch64 via cargo-zigbuild glibc 2.17 floor, macOS x86_64/arm64, Windows x86_64). `[profile.release]` has `strip = true` + `lto = true` (release binary ≈ 10MB with embedded datasets).

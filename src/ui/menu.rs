@@ -37,21 +37,23 @@ pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState
     
     let prayer_times: PrayerTimes = app_state.get_prayer_times();
 
-    
-    let salat_index = (prayer_times.get_current_index() + match app_state.config.display.indicator{
-        TimeIndicator::Next => 1,
-        TimeIndicator::Current => 0,
-        _ => 0,
-    } + 5 ) % 6;
+    // indicator only applies to today; other days render no markers/highlight
+    let in_between = app_state.config.display.indicator == TimeIndicator::Inbetween;
+    let indicator_data = if app_state.day_offset == 0 {
+        let window = app_state.config.notifications.offset.unsigned_abs();
+        indicator(app_state.config.display.indicator, &prayer_times, now_minutes(), window)
+    } else {
+        IndicatorData::default()
+    };
     let prayer_times: Vec<String> = prayer_times.format_time(&app_state.config);
-    
     
     // let salat_index = 5;
     let prayer_names = ["Fajr", "Sun", "Dhuhur", "Asr", "Magrib", "Isha"];
+    let sep = if in_between { AXIS } else { ":" };
     let rows: Vec<String> = prayer_names
         .into_iter()
         .zip(prayer_times)
-        .map(|(name, time)| format!("{name:<7}: {time}"))
+        .map(|(name, time)| format!("{name:<7}{sep} {time}"))
         .collect();
 
     let inner_width = layouts.salat.width.saturating_sub(2) as usize;
@@ -78,15 +80,26 @@ pub fn draw_menu(f: &mut Frame, app_state: &mut AppState, ui_state: &mut UIState
 
     let menu_list = rows
         .into_iter()
-        .map(|row| format!("{pad}{row}"))
         .enumerate()
-        .map(|(i, line)|
-            if salat_index == i && app_state.day_offset == 0{
-                ListItem::new(line).style(Style::default().add_modifier(Modifier::REVERSED))
+        .map(|(i, row)| {
+            let padded = format!("{pad}{row}");
+            let marker = match &indicator_data.marker {
+                Some(IndicatorMarker::Pair(Pair { current, .. })) if i == *current => Some(MARKER_CURRENT),
+                Some(IndicatorMarker::Pair(Pair { next, .. })) if i == *next => Some(MARKER_NEXT),
+                Some(IndicatorMarker::Single(row)) if i == *row => Some(MARKER_SINGLE),
+                _ => None,
+            };
+            let line = match marker {
+                Some(glyph) => marker_line(&padded, glyph, pad.len() + 7),
+                None => Line::from(Span::styled(padded, Style::default())),
+            };
+            let style = if indicator_data.highlight == Some(i) {
+                Style::default().add_modifier(Modifier::REVERSED)
             } else {
-                 ListItem::new(line).style(Style::default())
-            }
-        )
+                Style::default()
+            };
+            ListItem::new(line).style(style)
+        })
         .collect::<Vec<ListItem>>();
     
     
@@ -131,5 +144,24 @@ fn location_line(app_state: &AppState) -> Option<String> {
     };
     let text = text.trim().trim_matches(',').trim().to_string();
     (!text.is_empty()).then_some(text)
+}
+
+/// minutes since local midnight
+fn now_minutes() -> u32 {
+    use chrono::Timelike;
+    let now = chrono::offset::Local::now();
+    now.hour() * 60 + now.minute()
+}
+
+/// the marker glyph is drawn bold, splitting the row line into styled spans
+fn marker_line(padded: &str, glyph: &'static str, split: usize) -> Line<'static> {
+    let marker_style = Style::default().add_modifier(Modifier::BOLD);
+    let mut spans = vec![Span::styled(padded.chars().take(split).collect::<String>(), Style::default())];
+    spans.push(Span::styled(glyph, marker_style));
+    spans.push(Span::styled(
+        padded.chars().skip(split + glyph.chars().count()).collect::<String>(),
+        Style::default(),
+    ));
+    Line::from(spans)
 }
 

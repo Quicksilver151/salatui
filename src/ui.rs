@@ -1,6 +1,7 @@
 use crate::*;
 
 mod calender;
+mod indicator;
 mod menu;
 mod settings;
 mod utils;
@@ -10,6 +11,7 @@ use menu::*;
 pub use settings::*;
 use utils::*;
 pub use structs::*;
+pub use indicator::*;
 
 
 pub use tui::{

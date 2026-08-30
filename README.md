@@ -42,7 +42,7 @@ salatui --output        # print today's times once and exit, then quit
 salatui --config path   # use a specific config file
 ```
 
-The configuration file lives at `~/.config/salatui/config-dev.toml` and can
+The configuration file lives at `~/.config/salatui/config.toml` and can
 be edited in-app or by hand.
 
 ## Features
@@ -61,12 +61,24 @@ be edited in-app or by hand.
     section or field to select it and click it again to use it (cycle fields:
     left click forward, right click backward); right-click empty space to go
     back to the menu
+- Current-prayer indicator in four styles, set in settings under *indicator*:
+  `Empty`, `Current`, `Next`, and `Inbetween` (default) — the last draws a
+  vertical time axis beside the prayer list with a `◣`/`◤` arrow (Nerd Font
+  glyphs) marking the current→next boundary, narrowing to a single Powerline
+  arrow (``) on the prayer whenever it falls inside the notification offset
 - Day navigation with `←`/`→`, month navigation with `Shift`+`←`/`→`
 - Current-prayer indicator, live clock with seconds, configurable location line
 - Settings editor with live autosave and instant provider reload
 - City and island pickers with fuzzy (subsequence) filtering
 - Desktop notifications per prayer with configurable offset (minutes)
-- CLI output modes for scripting: `pretty-json`, `json`, `array`, `raw`, custom, `toml`
+- CLI output modes for scripting: `pretty-json`, `json`, `array`, `raw`, and
+  `toml`, plus a `custom` template string. Custom templates use `%` tokens:
+  `%f %s %d %a %m %i` (times), `%c` (current index), `%e` (index), `%y` (day).
+  A bare token prints the time in the configured display format; a suffix
+  stitches pieces together — `h`/`H` 12/24-hour, `m` minutes, `p` AM/PM,
+  `M` raw minutes, `t` full time, everything else literal (the default
+  `"[%fh:mp, %sh:mp, %dh:mp, %ah:mp, %mh:mp, %ih:mp]"` yields the six
+  12-hour times).
 
 ## Dependencies
 
