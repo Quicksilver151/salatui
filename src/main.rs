@@ -5,7 +5,6 @@ pub use crossterm::{event, execute, terminal};
 
 pub use event::{KeyCode, KeyModifiers, EnableMouseCapture, DisableMouseCapture, Event};
 pub use terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-// pub use arboard::*;
 pub use clap::Parser;
 pub use tui::{
     Terminal,
